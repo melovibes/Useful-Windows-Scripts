@@ -14,11 +14,17 @@ Perfect for power users, IT enthusiasts, debloaters, customizers and people who 
 
 ## 📂 Folder Structure (recommended)
 Useful-Windows-11-Scripts/
+
 ├── 01-Organization/
+
 ├── 02-Performance/
+
 ├── 03-Utilities/
+
 ├── _Legacy/              # old/bad experiments - don't use in production
+
 ├── docs/                 # extra guides, before/after screenshots
+
 └── README.md
 
 ## 🚀 How to Use
