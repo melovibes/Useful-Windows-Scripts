@@ -31,7 +31,6 @@ Useful-Windows-11-Scripts/
 
 Most scripts:
 
-```powershell
 # Right-click → Run with PowerShell (recommended)
 
 # OR via terminal (admin recommended for most):
