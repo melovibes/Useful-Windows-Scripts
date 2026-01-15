@@ -31,9 +31,10 @@ Useful-Windows-11-Scripts/
 
 Most scripts:
 
-# Right-click → Run with PowerShell (recommended)
+Powershell
+Right-click → Run with PowerShell (recommended)
 
-# OR via terminal (admin recommended for most):
+OR via terminal (admin recommended for most):
 powershell -ExecutionPolicy Bypass -File ".\01_Organization\Some-Script.py"
 
 ## Always read the header comments — many scripts include:
