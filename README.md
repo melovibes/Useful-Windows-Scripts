@@ -15,6 +15,7 @@ Perfect for power users, IT enthusiasts, debloaters, customizers and people who 
 Useful-Windows-11-Scripts/
 
 ├── 01-Organization/
+
 └──   Organize_Downloads  #This Python script organizes your Downloads folder by automatically sorting files into separate subfolders based on their file type/extension.
 ├── 02-Performance/
 
