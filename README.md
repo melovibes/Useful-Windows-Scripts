@@ -11,7 +11,7 @@ Perfect for power users, IT enthusiasts, debloaters, customizers and people who 
 - **03_Utilities** → Quick tools, cleanup scripts, window management, update control, system shortcuts                  #Coming Soon
 - **Legacy** → Old experiments, outdated methods, or "don't use unless you know exactly what you're doing" scripts      
 
-## 📂 Folder Structure (recommended)
+## 📂 Folder Structure
 Useful-Windows-11-Scripts/
 
 ├── 01-Organization/
