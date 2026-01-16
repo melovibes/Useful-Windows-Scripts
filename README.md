@@ -1,4 +1,3 @@
-[README.md](https://github.com/user-attachments/files/24656185/README.md)
 # Useful Windows 11 Scripts 🛠️💻
 
 A growing collection of practical, well-commented PowerShell, batch, and occasionally VBS/Reg scripts that make life on Windows 11 easier, faster or less annoying.
@@ -8,15 +7,15 @@ Perfect for power users, IT enthusiasts, debloaters, customizers and people who 
 ## ✨ Categories
 
 - **01_Organization** → Context menus, File Explorer tweaks, shell extensions, right-click goodies
-- **02_Performance** → Service optimizations, visual effects, startup delay, gaming tweaks, telemetry reduction
-- **03_Utilities** → Quick tools, cleanup scripts, window management, update control, system shortcuts
-- **Legacy** → Old experiments, outdated methods, or "don't use unless you know exactly what you're doing" scripts
+- **02_Performance** → Service optimizations, visual effects, startup delay, gaming tweaks, telemetry reduction         #Coming Soon
+- **03_Utilities** → Quick tools, cleanup scripts, window management, update control, system shortcuts                  #Coming Soon
+- **Legacy** → Old experiments, outdated methods, or "don't use unless you know exactly what you're doing" scripts      
 
 ## 📂 Folder Structure (recommended)
 Useful-Windows-11-Scripts/
 
 ├── 01-Organization/
-
+└──   Organize_Downloads  #This Python script organizes your Downloads folder by automatically sorting files into separate subfolders based on their file type/extension.
 ├── 02-Performance/
 
 ├── 03-Utilities/
