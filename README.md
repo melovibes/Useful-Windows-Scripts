@@ -1,83 +1,112 @@
 # Useful Windows 11 Scripts 🛠️💻
 
-A growing collection of practical, well-commented PowerShell, batch, and occasionally VBS/Reg scripts that make life on Windows 11 easier, faster or less annoying.
+A growing collection of practical, well-commented PowerShell and Python scripts that make life on Windows 11 easier, faster, safer or less annoying.
 
-Perfect for power users, IT enthusiasts, debloaters, customizers and people who hate doing the same thing 50 times manually.
+Made for power users, IT folks, small-business PCs and anyone who hates doing the same thing 50 times by hand.
 
-## ✨ Categories
+## 📋 Script index
 
-- **01_Organization** → Context menus, File Explorer tweaks, shell extensions, right-click goodies
-- **02_Performance** → Service optimizations, visual effects, startup delay, gaming tweaks, telemetry reduction         #Coming Soon
-- **03_Utilities** → Quick tools, cleanup scripts, window management, update control, system shortcuts
-- **Legacy** → Old experiments, outdated methods, or "don't use unless you know exactly what you're doing" scripts      
+| Script | Category | What it does | Safety | Admin? |
+|---|---|---|---|---|
+| [Organize_Downloads.py](01_Organization/Organize_Downloads.py) | 01 Organization | Sorts your Downloads folder into subfolders by file type | Moves files | No |
+| [Find-SuspiciousStartup.ps1](03_Utilities/Find-SuspiciousStartup.ps1) | 03 Utilities | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
+| [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 
-## 📂 Folder Structure
-Useful-Windows-11-Scripts/
+## 📂 Categories
 
-├── 01-Organization/
+- **01_Organization**: file and folder tidying, Explorer tweaks
+- **02_Performance**: service optimizations, startup, gaming tweaks, telemetry *(coming soon)*
+- **03_Utilities**: quick tools, security checks, cleanup, system shortcuts
 
-└──   Organize_Downloads  
+---
 
-#This Python script organizes your Downloads folder by automatically sorting files into separate subfolders based on their file type/extension.
+## 01_Organization
 
-├── 03_Utilities/
+### Organize_Downloads.py
 
-└──   Find-SuspiciousStartup.ps1
+Sorts everything in your Downloads folder into subfolders like Images, Videos, Documents, Archives and Executables. Anything unrecognized goes to **Other**.
 
-#Read-only security check. Lists services, startup Run keys and non-Microsoft scheduled tasks, and flags ones that are unsigned, live outside Windows/Program Files, use a fake "Windows"/"Microsoft" name with a non-Microsoft signer, have no uninstall entry, or run through script hosts like node.exe or python. Inspired by a real proxyware infection ("WindowsNetService"). Changes nothing.
+```powershell
+python .\01_Organization\Organize_Downloads.py
+```
 
-Usage:
+- Needs [Python 3](https://www.python.org/downloads/).
+- Edit the `FOLDERS` list at the top of the script to change the categories.
+
+---
+
+## 03_Utilities
+
+### Find-SuspiciousStartup.ps1
+
+A read-only security check, written after a real proxyware infection ("WindowsNetService"). It lists services, startup Run keys and non-Microsoft scheduled tasks. It then scores each one on a few red flags: it's unsigned, it runs from an odd location, it has a fake "Windows" or "Microsoft" name, it has no uninstall entry, or it runs through a script host like `node.exe` or `python`.
+
+```powershell
 powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Find-SuspiciousStartup.ps1"
-  -All               show every item, not just flagged ones
-  -ShowConnections   show live outbound connections of flagged running items
-  -CsvPath <file>    export full results to CSV
-Works without admin; run as admin for full task and signature coverage.
+```
 
-└──   Block-Distractions.ps1
+| Switch | What it does |
+|---|---|
+| `-All` | Show every item, not just flagged ones |
+| `-ShowConnections` | Show live outbound connections of flagged running items |
+| `-CsvPath <file>` | Export full results to CSV |
 
-#Blocks distracting and risky sites through the Windows hosts file (social, live shopping, adult, malware/phishing, proxies/VPNs, piracy, gambling, streaming, gaming, crypto). Works alongside PowerToys Hosts File Editor: it only touches its own marked block, so reruns replace it and -Undo removes it. Dry run by default; -Apply writes (admin), saves a timestamped backup and flushes DNS. Critical domains (Microsoft, Google Workspace, GitHub, Apple, Dropbox, UniFi, Zoom, Slack) are protected and never blocked.
+Works without admin; run as admin for full task and signature coverage. **Changes nothing.**
 
-Usage (run as administrator to apply):
-powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Block-Distractions.ps1" -Company          # dry run
+### Block-Distractions.ps1
+
+Blocks distracting and risky sites through the Windows hosts file. It works alongside PowerToys Hosts File Editor and only touches its own marked block, so reruns replace the block and `-Undo` removes it. Critical work domains (Microsoft, Google Workspace, GitHub, Apple, Dropbox, UniFi, Zoom and Slack) are protected and never blocked.
+
+```powershell
+# Preview (no changes)
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Block-Distractions.ps1" -Company
+
+# Apply (run Terminal as administrator)
 powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Block-Distractions.ps1" -Company -Apply
-  Categories: -Social -Shopping -Adult -Security -Proxies -Piracy -Gambling -Streaming -Gaming -Crypto
-  -Company           workplace preset (all of the above; no YouTube, file sharing or webmail)
-  -All               every category except YouTube
-  -YouTube           block ALL of YouTube (off by default)
-  -AdultFromSource / -SecurityFromSource   add StevenBlack's big lists (~75k each, can slow DNS)
-  -Custom 'a.com','b.net'                  extra domains
-  -Undo -Apply       remove the block
-Note: turn off "Secure DNS" / DNS-over-HTTPS in your browser, or it will bypass the hosts file.
 
-└── README.md
+# Remove the block
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Block-Distractions.ps1" -Undo -Apply
+```
 
-## 🚀 How to Use
+| Switch | What it blocks |
+|---|---|
+| `-Social` | Instagram, Facebook, TikTok, X, Snapchat, Reddit, Pinterest, Threads, Twitch, Kick, BeReal |
+| `-Shopping` | Whatnot, Fanatics Live, TikTok Shop, Popshop, NTWRK, Temu, Shein |
+| `-Adult` | ~330 major adult sites (`-AdultFromSource` adds ~77k more) |
+| `-Security` | Known malware, phishing and scam sites (`-SecurityFromSource` adds ~74k more) |
+| `-Proxies` | Free VPNs, web proxies and bandwidth-sharing "proxyware" |
+| `-Piracy` | Torrent, crack and repack sites |
+| `-Gambling` | Sportsbooks, DFS, online and sweepstakes casinos |
+| `-Streaming` | Netflix, Hulu, Disney+, Max, Prime Video and more |
+| `-Gaming` | Steam, Epic, Roblox, Battle.net, Discord and browser games |
+| `-Crypto` | Exchanges, trading apps and meme-coin sites |
+| `-YouTube` | All of YouTube (off by default; can't block only Shorts) |
+| `-Company` | Workplace preset: everything above except YouTube |
+| `-All` | Every category except YouTube |
+| `-Custom 'a.com','b.net'` | Your own extra domains |
 
-Most scripts:
+> **Heads up:** turn off "Secure DNS" (DNS-over-HTTPS) in Chrome, Edge, Brave and Firefox, or browsers will skip the hosts file. The huge `-FromSource` lists can slow down DNS on some PCs.
 
-Powershell
-Right-click → Run with PowerShell (recommended)
+---
 
-OR via terminal (admin recommended for most):
-powershell -ExecutionPolicy Bypass -File ".\01_Organization\Some-Script.py"
+## 🚀 How to run scripts
 
-## Always read the header comments — many scripts include:
-
-Safety level (Safe / Medium / Aggressive)
-Dry-run / WhatIf support
-Undo instructions
+1. Download or clone the repo.
+2. Open **Terminal** (right-click Start). Use **Terminal (Admin)** when a script needs it.
+3. `cd` into the repo folder and run the command shown for that script.
+4. If Windows says a file is blocked, run `Unblock-File .\path\to\script.ps1` first.
 
 ## ⚠️ Important
 
-Most scripts require Administrator rights
-Create a System Restore Point before running anything from 02_Performance or heavy tweaks
-Some changes may get reset by Windows Updates / Feature Updates
-Use responsibly — you break it, you keep both pieces 🪟💥
+- Always read the header comments first. They list the safety level, any dry-run or WhatIf support, and undo steps.
+- Create a System Restore Point before running anything from `02_Performance` or heavy tweaks.
+- Some changes may be reset by Windows feature updates.
+- Use responsibly. You break it, you keep both pieces 🪟💥
 
-## Contributing
-Found a better way? Fixed something that broke in 24H2?
-Feel free to open a PR!
-Nice-to-have: good comments, parameters/switches, and undo steps.
+## 🤝 Contributing
+
+Found a better way, or fixed something that broke in 24H2? PRs welcome. Good comments, parameters and switches, and undo steps are appreciated.
 
 ## 📜 License
-MIT License — free to use, modify, share. No warranty, run at your own risk.
+
+MIT License: free to use, modify and share. No warranty; run at your own risk.
