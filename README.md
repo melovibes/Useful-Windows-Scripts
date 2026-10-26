@@ -8,7 +8,7 @@ Perfect for power users, IT enthusiasts, debloaters, customizers and people who 
 
 - **01_Organization** → Context menus, File Explorer tweaks, shell extensions, right-click goodies
 - **02_Performance** → Service optimizations, visual effects, startup delay, gaming tweaks, telemetry reduction         #Coming Soon
-- **03_Utilities** → Quick tools, cleanup scripts, window management, update control, system shortcuts                  #Coming Soon
+- **03_Utilities** → Quick tools, cleanup scripts, window management, update control, system shortcuts
 - **Legacy** → Old experiments, outdated methods, or "don't use unless you know exactly what you're doing" scripts      
 
 ## 📂 Folder Structure
@@ -19,6 +19,19 @@ Useful-Windows-11-Scripts/
 └──   Organize_Downloads  
 
 #This Python script organizes your Downloads folder by automatically sorting files into separate subfolders based on their file type/extension.
+
+├── 03_Utilities/
+
+└──   Find-SuspiciousStartup.ps1
+
+#Read-only security check. Lists services, startup Run keys and non-Microsoft scheduled tasks, and flags ones that are unsigned, live outside Windows/Program Files, use a fake "Windows"/"Microsoft" name with a non-Microsoft signer, have no uninstall entry, or run through script hosts like node.exe or python. Inspired by a real proxyware infection ("WindowsNetService"). Changes nothing.
+
+Usage:
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Find-SuspiciousStartup.ps1"
+  -All               show every item, not just flagged ones
+  -ShowConnections   show live outbound connections of flagged running items
+  -CsvPath <file>    export full results to CSV
+Works without admin; run as admin for full task and signature coverage.
 
 └── README.md
 
