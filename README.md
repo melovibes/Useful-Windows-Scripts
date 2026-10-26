@@ -33,6 +33,22 @@ powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Find-SuspiciousStartup.
   -CsvPath <file>    export full results to CSV
 Works without admin; run as admin for full task and signature coverage.
 
+└──   Block-Distractions.ps1
+
+#Blocks distracting and risky sites through the Windows hosts file (social, live shopping, adult, malware/phishing, proxies/VPNs, piracy, gambling, streaming, gaming, crypto). Works alongside PowerToys Hosts File Editor: it only touches its own marked block, so reruns replace it and -Undo removes it. Dry run by default; -Apply writes (admin), saves a timestamped backup and flushes DNS. Critical domains (Microsoft, Google Workspace, GitHub, Apple, Dropbox, UniFi, Zoom, Slack) are protected and never blocked.
+
+Usage (run as administrator to apply):
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Block-Distractions.ps1" -Company          # dry run
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Block-Distractions.ps1" -Company -Apply
+  Categories: -Social -Shopping -Adult -Security -Proxies -Piracy -Gambling -Streaming -Gaming -Crypto
+  -Company           workplace preset (all of the above; no YouTube, file sharing or webmail)
+  -All               every category except YouTube
+  -YouTube           block ALL of YouTube (off by default)
+  -AdultFromSource / -SecurityFromSource   add StevenBlack's big lists (~75k each, can slow DNS)
+  -Custom 'a.com','b.net'                  extra domains
+  -Undo -Apply       remove the block
+Note: turn off "Secure DNS" / DNS-over-HTTPS in your browser, or it will bypass the hosts file.
+
 └── README.md
 
 ## 🚀 How to Use
