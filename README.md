@@ -12,6 +12,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Survey-Drive.ps1](01_Organization/Survey-Drive.ps1) | 01 Organization | Reports what's taking space on a messy drive: biggest folders and files, file types, age, old Windows installs and duplicates | Read-only | No |
 | [Find-SuspiciousStartup.ps1](03_Utilities/Find-SuspiciousStartup.ps1) | 03 Utilities | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
+| [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 
 ## 📂 Categories
 
@@ -112,6 +113,30 @@ powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Block-Distractions.ps1"
 | `-Custom 'a.com','b.net'` | Your own extra domains |
 
 > **Heads up:** turn off "Secure DNS" (DNS-over-HTTPS) in Chrome, Edge, Brave and Firefox, or browsers will skip the hosts file. The huge `-FromSource` lists can slow down DNS on some PCs.
+
+### Test-HomeNetwork.ps1
+
+A read-only network health check for the "is it my PC, the Wi-Fi, the router or the internet?" question. It lists active adapters with link speed, IP, gateway and DNS servers, reads Wi-Fi signal, band and channel, and pings your gateway, Cloudflare and Google DNS (plus anything you add) for latency, jitter and packet loss. It also times DNS lookups against each server you use and flags unexpected proxy settings, which can be a sign of adware or proxyware, and a hosts file large enough to be a blocklist. It ends with a plain-English list of anything that looks wrong.
+
+```powershell
+# Quick check
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-HomeNetwork.ps1"
+
+# Longer test, also ping a NAS and find the path MTU
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-HomeNetwork.ps1" -Count 50 -Targets '192.168.1.20' -CheckMtu
+```
+
+| Switch | What it does |
+|---|---|
+| `-Count <n>` | Pings sent to each target (default 20) |
+| `-Targets 'a','b'` | Extra hosts or IPs to ping, like a NAS, AP or another PC |
+| `-DnsName <name>` | Name to look up when timing DNS servers (default www.microsoft.com) |
+| `-NoInternet` | Skip the public targets and test only your local network |
+| `-CheckMtu` | Find the largest packet that gets through without fragmenting |
+| `-HostsWarnThreshold <n>` | Warn when the hosts file has more active entries than this (default 50) |
+| `-JsonPath <file>` | Save all results to a JSON file |
+
+Only talks to your gateway, your DNS servers, 1.1.1.1, 8.8.8.8 and targets you name. Works without admin. **Changes nothing.**
 
 ---
 
