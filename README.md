@@ -13,6 +13,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Find-SuspiciousStartup.ps1](03_Utilities/Find-SuspiciousStartup.ps1) | 03 Utilities | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
+| [Test-SecurityPosture.ps1](03_Utilities/Test-SecurityPosture.ps1) | 03 Utilities | Checks Defender, firewall, BitLocker, UAC, Secure Boot, TPM, SMBv1, RDP, updates and local accounts, then lists problems with fixes | Read-only | Optional |
 
 ## 📂 Categories
 
@@ -137,6 +138,25 @@ powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-HomeNetwork.ps1" -
 | `-JsonPath <file>` | Save all results to a JSON file |
 
 Only talks to your gateway, your DNS servers, 1.1.1.1, 8.8.8.8 and targets you name. Works without admin. **Changes nothing.**
+
+### Test-SecurityPosture.ps1
+
+A quick, read-only security checkup. It reviews Microsoft Defender (real-time protection, signature age, tamper protection), every firewall profile, UAC, legacy SMBv1, Remote Desktop, the Guest account and local admins, recent Windows updates and pending reboots. Run it as admin to also check BitLocker, Secure Boot and the TPM. Each problem comes with a plain-English fix. Nothing is changed.
+
+```powershell
+# Quick check
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-SecurityPosture.ps1"
+
+# Only show problems and save a CSV report
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-SecurityPosture.ps1" -IssuesOnly -ExportPath .\posture.csv
+```
+
+| Switch | What it does |
+|---|---|
+| `-IssuesOnly` | Shows only warnings and failures |
+| `-ExportPath <file>` | Also saves all results to a CSV file |
+| `-MaxSignatureAgeDays <n>` | Flags Defender signatures older than this (default 3) |
+| `-MaxUpdateAgeDays <n>` | Flags the last installed update if older than this (default 45) |
 
 ---
 
