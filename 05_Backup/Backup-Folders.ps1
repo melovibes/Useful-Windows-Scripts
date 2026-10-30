@@ -18,13 +18,13 @@
 
 .USAGE
     # Preview (changes nothing)
-    powershell -ExecutionPolicy Bypass -File .\03_Utilities\Backup-Folders.ps1 -Destination E:\Backups
+    powershell -ExecutionPolicy Bypass -File .\05_Backup\Backup-Folders.ps1 -Destination E:\Backups
 
     # Copy for real, with a log
-    powershell -ExecutionPolicy Bypass -File .\03_Utilities\Backup-Folders.ps1 -Destination E:\Backups -Run -LogPath .\backup.log
+    powershell -ExecutionPolicy Bypass -File .\05_Backup\Backup-Folders.ps1 -Destination E:\Backups -Run -LogPath .\backup.log
 
     # Pick your own folders
-    powershell -ExecutionPolicy Bypass -File .\03_Utilities\Backup-Folders.ps1 -Source "$env:USERPROFILE\Documents","D:\Projects" -Destination \\nas\backup -Run
+    powershell -ExecutionPolicy Bypass -File .\05_Backup\Backup-Folders.ps1 -Source "$env:USERPROFILE\Documents","D:\Projects" -Destination \\nas\backup -Run
 
 .PARAMETER Source
     Folders to back up. Default: Desktop, Documents, Pictures, Videos, Music (skips ones that don't exist).

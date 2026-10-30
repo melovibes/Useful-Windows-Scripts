@@ -39,7 +39,7 @@
 .EXAMPLE
     .\Find-SuspiciousStartup.ps1 -ShowConnections -CsvPath "$env:USERPROFILE\Desktop\startup-audit.csv"
 .EXAMPLE
-    powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Find-SuspiciousStartup.ps1" -All
+    powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-SuspiciousStartup.ps1" -All
 
 .NOTES
     Undo: nothing to undo - this script changes nothing.

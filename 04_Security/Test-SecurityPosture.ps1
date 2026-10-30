@@ -11,9 +11,9 @@
     they are reported as "Skipped" instead of failing.
 
 .USAGE
-    powershell -ExecutionPolicy Bypass -File .\03_Utilities\Test-SecurityPosture.ps1
-    powershell -ExecutionPolicy Bypass -File .\03_Utilities\Test-SecurityPosture.ps1 -IssuesOnly
-    powershell -ExecutionPolicy Bypass -File .\03_Utilities\Test-SecurityPosture.ps1 -ExportPath .\posture.csv
+    powershell -ExecutionPolicy Bypass -File .\04_Security\Test-SecurityPosture.ps1
+    powershell -ExecutionPolicy Bypass -File .\04_Security\Test-SecurityPosture.ps1 -IssuesOnly
+    powershell -ExecutionPolicy Bypass -File .\04_Security\Test-SecurityPosture.ps1 -ExportPath .\posture.csv
 
 .PARAMETER IssuesOnly
     Show only Warn/Fail results.
