@@ -10,17 +10,19 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 |---|---|---|---|---|
 | [Organize_Downloads.py](01_Organization/Organize_Downloads.py) | 01 Organization | Sorts your Downloads folder into subfolders by file type | Moves files | No |
 | [Survey-Drive.ps1](01_Organization/Survey-Drive.ps1) | 01 Organization | Reports what's taking space on a messy drive: biggest folders and files, file types, age, old Windows installs and duplicates | Read-only | No |
-| [Find-SuspiciousStartup.ps1](03_Utilities/Find-SuspiciousStartup.ps1) | 03 Utilities | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
-| [Test-SecurityPosture.ps1](03_Utilities/Test-SecurityPosture.ps1) | 03 Utilities | Checks Defender, firewall, BitLocker, UAC, Secure Boot, TPM, SMBv1, RDP, updates and local accounts, then lists problems with fixes | Read-only | Optional |
-| [Backup-Folders.ps1](03_Utilities/Backup-Folders.ps1) | 03 Utilities | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
+| [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
+| [Test-SecurityPosture.ps1](04_Security/Test-SecurityPosture.ps1) | 04 Security | Checks Defender, firewall, BitLocker, UAC, Secure Boot, TPM, SMBv1, RDP, updates and local accounts, then lists problems with fixes | Read-only | Optional |
+| [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 
 ## 📂 Categories
 
 - **01_Organization**: file and folder tidying, Explorer tweaks
 - **02_Performance**: service optimizations, startup, gaming tweaks, telemetry *(coming soon)*
-- **03_Utilities**: quick tools, security checks, cleanup, system shortcuts
+- **03_Utilities**: quick tools, network diagnostics, cleanup, system shortcuts
+- **04_Security**: security posture checks, startup and persistence audits
+- **05_Backup**: backups of your files to another drive or NAS
 
 ---
 
@@ -65,22 +67,6 @@ Works without admin; run as admin to read more of an old Windows install. **Chan
 ---
 
 ## 03_Utilities
-
-### Find-SuspiciousStartup.ps1
-
-A read-only security check, written after a real proxyware infection ("WindowsNetService"). It lists services, startup Run keys and non-Microsoft scheduled tasks. It then scores each one on a few red flags: it's unsigned, it runs from an odd location, it has a fake "Windows" or "Microsoft" name, it has no uninstall entry, or it runs through a script host like `node.exe` or `python`.
-
-```powershell
-powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Find-SuspiciousStartup.ps1"
-```
-
-| Switch | What it does |
-|---|---|
-| `-All` | Show every item, not just flagged ones |
-| `-ShowConnections` | Show live outbound connections of flagged running items |
-| `-CsvPath <file>` | Export full results to CSV |
-
-Works without admin; run as admin for full task and signature coverage. **Changes nothing.**
 
 ### Block-Distractions.ps1
 
@@ -140,16 +126,36 @@ powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-HomeNetwork.ps1" -
 
 Only talks to your gateway, your DNS servers, 1.1.1.1, 8.8.8.8 and targets you name. Works without admin. **Changes nothing.**
 
+---
+
+## 04_Security
+
+### Find-SuspiciousStartup.ps1
+
+A read-only security check, written after a real proxyware infection ("WindowsNetService"). It lists services, startup Run keys and non-Microsoft scheduled tasks. It then scores each one on a few red flags: it's unsigned, it runs from an odd location, it has a fake "Windows" or "Microsoft" name, it has no uninstall entry, or it runs through a script host like `node.exe` or `python`.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-SuspiciousStartup.ps1"
+```
+
+| Switch | What it does |
+|---|---|
+| `-All` | Show every item, not just flagged ones |
+| `-ShowConnections` | Show live outbound connections of flagged running items |
+| `-CsvPath <file>` | Export full results to CSV |
+
+Works without admin; run as admin for full task and signature coverage. **Changes nothing.**
+
 ### Test-SecurityPosture.ps1
 
 A quick, read-only security checkup. It reviews Microsoft Defender (real-time protection, signature age, tamper protection), every firewall profile, UAC, legacy SMBv1, Remote Desktop, the Guest account and local admins, recent Windows updates and pending reboots. Run it as admin to also check BitLocker, Secure Boot and the TPM. Each problem comes with a plain-English fix. Nothing is changed.
 
 ```powershell
 # Quick check
-powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-SecurityPosture.ps1"
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Test-SecurityPosture.ps1"
 
 # Only show problems and save a CSV report
-powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-SecurityPosture.ps1" -IssuesOnly -ExportPath .\posture.csv
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Test-SecurityPosture.ps1" -IssuesOnly -ExportPath .\posture.csv
 ```
 
 | Switch | What it does |
@@ -159,19 +165,23 @@ powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-SecurityPosture.ps
 | `-MaxSignatureAgeDays <n>` | Flags Defender signatures older than this (default 3) |
 | `-MaxUpdateAgeDays <n>` | Flags the last installed update if older than this (default 45) |
 
+---
+
+## 05_Backup
+
 ### Backup-Folders.ps1
 
 A simple, safe backup to another drive or a NAS share. It copies your Desktop, Documents, Pictures, Videos and Music (or folders you pick) into `<Destination>\<PC name>\`, and reruns copy only what's new or changed. By default it only previews: it shows how many files and how much data would be copied and whether it fits on the destination. `-Run` copies but never deletes anything in the backup. `-Mirror` makes the backup an exact match, deleting files you've removed, and asks you to type YES first. It refuses to back up into one of the folders it's backing up.
 
 ```powershell
 # Preview (changes nothing)
-powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Backup-Folders.ps1" -Destination E:\Backups
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Backup-Folders.ps1" -Destination E:\Backups
 
 # Copy for real and keep a log
-powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Backup-Folders.ps1" -Destination E:\Backups -Run -LogPath .\backup.log
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Backup-Folders.ps1" -Destination E:\Backups -Run -LogPath .\backup.log
 
 # Back up your own folders to a NAS share
-powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Backup-Folders.ps1" -Source "$env:USERPROFILE\Documents","D:\Projects" -Destination \\nas\backup -Run
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Backup-Folders.ps1" -Source "$env:USERPROFILE\Documents","D:\Projects" -Destination \\nas\backup -Run
 ```
 
 | Switch | What it does |
