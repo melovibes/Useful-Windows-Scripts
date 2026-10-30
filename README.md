@@ -14,6 +14,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Test-SecurityPosture.ps1](03_Utilities/Test-SecurityPosture.ps1) | 03 Utilities | Checks Defender, firewall, BitLocker, UAC, Secure Boot, TPM, SMBv1, RDP, updates and local accounts, then lists problems with fixes | Read-only | Optional |
+| [Backup-Folders.ps1](03_Utilities/Backup-Folders.ps1) | 03 Utilities | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 
 ## 📂 Categories
 
@@ -157,6 +158,34 @@ powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-SecurityPosture.ps
 | `-ExportPath <file>` | Also saves all results to a CSV file |
 | `-MaxSignatureAgeDays <n>` | Flags Defender signatures older than this (default 3) |
 | `-MaxUpdateAgeDays <n>` | Flags the last installed update if older than this (default 45) |
+
+### Backup-Folders.ps1
+
+A simple, safe backup to another drive or a NAS share. It copies your Desktop, Documents, Pictures, Videos and Music (or folders you pick) into `<Destination>\<PC name>\`, and reruns copy only what's new or changed. By default it only previews: it shows how many files and how much data would be copied and whether it fits on the destination. `-Run` copies but never deletes anything in the backup. `-Mirror` makes the backup an exact match, deleting files you've removed, and asks you to type YES first. It refuses to back up into one of the folders it's backing up.
+
+```powershell
+# Preview (changes nothing)
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Backup-Folders.ps1" -Destination E:\Backups
+
+# Copy for real and keep a log
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Backup-Folders.ps1" -Destination E:\Backups -Run -LogPath .\backup.log
+
+# Back up your own folders to a NAS share
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Backup-Folders.ps1" -Source "$env:USERPROFILE\Documents","D:\Projects" -Destination \\nas\backup -Run
+```
+
+| Switch | What it does |
+|---|---|
+| `-Destination <folder or share>` | Where the backup goes (required) |
+| `-Source 'a','b'` | Folders to back up (default Desktop, Documents, Pictures, Videos, Music) |
+| `-Run` | Actually copy; without it the script only previews |
+| `-Mirror` | Make the backup match the source exactly, deleting extra files there (needs `-Run` and typed YES) |
+| `-ExcludeDirs 'a','b'` | Folder names to skip (default `node_modules`, `.git` and system folders) |
+| `-ExcludeFiles 'a','b'` | File patterns to skip (default `desktop.ini`, `Thumbs.db`, Office lock files, `*.tmp`) |
+| `-Threads <n>` | Files copied in parallel (default 8) |
+| `-LogPath <file>` | Append robocopy output to a log file |
+
+Works without admin. Only writes to the destination you name, and only with `-Run`.
 
 ---
 
