@@ -11,6 +11,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Organize_Downloads.py](01_Organization/Organize_Downloads.py) | 01 Organization | Sorts your Downloads folder into subfolders by file type | Moves files | No |
 | [Survey-Drive.ps1](01_Organization/Survey-Drive.ps1) | 01 Organization | Reports what's taking space on a messy drive: biggest folders and files, file types, age, old Windows installs and duplicates | Read-only | No |
 | [Get-StartupImpact.ps1](02_Performance/Get-StartupImpact.ps1) | 02 Performance | Lists startup apps, logon tasks and auto-start services with their CPU and disk impact, plus boot times and what Windows says slowed boot | Read-only | Optional |
+| [Clear-TempAndCache.ps1](02_Performance/Clear-TempAndCache.ps1) | 02 Performance | Measures temp folders, browser caches, crash dumps and the Windows Update cache, and clears them only with `-Clean` | Preview by default; deletes with -Clean after typing YES | Optional (needed for system caches) |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
@@ -88,6 +89,32 @@ powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-StartupImpact.ps1
 | `-CsvPath <file>` | Export the full startup list to CSV |
 
 CPU and disk are totals since each app launched, so apps left open all day can rate higher than Task Manager shows. Works without admin; run as admin for boot history and SYSTEM services. **Changes nothing.**
+
+### Clear-TempAndCache.ps1
+
+Shows how much space your temp folders and caches are using, and clears them only when you ask. It covers your temp folder, C:\Windows\Temp, the Edge, Chrome, Brave and Firefox caches (all profiles, cache only, never cookies, history or passwords), Explorer's thumbnail cache, crash dumps and error reports, the Delivery Optimization cache, and the Windows Update download cache. Only files older than two days are counted, so nothing an app is using right now gets touched. Run it with no switches for a size report; add `-Clean` to delete, and it asks you to type YES first.
+
+```powershell
+# Preview: how much each location uses (deletes nothing)
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Clear-TempAndCache.ps1"
+
+# Clean just your temp folder and browser caches
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Clear-TempAndCache.ps1" -Clean -Include UserTemp,Edge,Chrome
+
+# As admin: clean everything, closing browsers first
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Clear-TempAndCache.ps1" -Clean -CloseBrowsers
+```
+
+| Switch | What it does |
+|---|---|
+| `-Clean` | Delete the files found (asks you to type YES first) |
+| `-Force` | With `-Clean`, skip the YES prompt |
+| `-Include <names>` | Only these locations: UserTemp, WindowsTemp, Edge, Chrome, Brave, Firefox, ThumbCache, CrashDumps, DeliveryOpt, WindowsUpdate |
+| `-Exclude <names>` | Skip these locations |
+| `-OlderThanDays <n>` | Only files older than this many days (default 2; 0 means anything not locked) |
+| `-CloseBrowsers` | With `-Clean`, close open browsers so their caches can be cleared; otherwise open browsers are skipped |
+
+Preview works without admin. Cleaning C:\Windows\Temp, Delivery Optimization and the Windows Update cache needs admin, and the Windows Update clean briefly stops and restarts the Windows Update and BITS services. Files in use are skipped. Deleted files don't go to the Recycle Bin, but everything here is a cache that Windows and your apps rebuild.
 
 ---
 
