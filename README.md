@@ -10,6 +10,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 |---|---|---|---|---|
 | [Organize_Downloads.py](01_Organization/Organize_Downloads.py) | 01 Organization | Sorts your Downloads folder into subfolders by file type | Moves files | No |
 | [Survey-Drive.ps1](01_Organization/Survey-Drive.ps1) | 01 Organization | Reports what's taking space on a messy drive: biggest folders and files, file types, age, old Windows installs and duplicates | Read-only | No |
+| [Get-StartupImpact.ps1](02_Performance/Get-StartupImpact.ps1) | 02 Performance | Lists startup apps, logon tasks and auto-start services with their CPU and disk impact, plus boot times and what Windows says slowed boot | Read-only | Optional |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
@@ -19,7 +20,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 ## 📂 Categories
 
 - **01_Organization**: file and folder tidying, Explorer tweaks
-- **02_Performance**: service optimizations, startup, gaming tweaks, telemetry *(coming soon)*
+- **02_Performance**: service optimizations, startup, gaming tweaks, telemetry
 - **03_Utilities**: quick tools, network diagnostics, cleanup, system shortcuts
 - **04_Security**: security posture checks, startup and persistence audits
 - **05_Backup**: backups of your files to another drive or NAS
@@ -63,6 +64,30 @@ powershell -ExecutionPolicy Bypass -File ".\01_Organization\Survey-Drive.ps1" -P
 | `-HtmlPath <file>` | Save the report as an HTML page |
 
 Works without admin; run as admin to read more of an old Windows install. **Changes nothing.**
+
+---
+
+## 02_Performance
+
+### Get-StartupImpact.ps1
+
+A read-only answer to "why does my PC take so long to start?" It lists everything that launches with Windows: startup apps from the registry and Startup folders (with their on/off state from Settings), non-Microsoft scheduled tasks that run at logon or boot, and non-Microsoft auto-start services. For each one that's running it shows CPU time, disk I/O and memory, and rates it High, Medium or Low using Task Manager's cut-offs. It also shows your last boot and whether Fast Startup is on. Run it as admin to add recent boot times and the apps and services Windows itself logged as slowing down boot. It ends with a short list of high-impact startup apps you could turn off.
+
+```powershell
+# Quick report
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-StartupImpact.ps1"
+
+# Everything, including disabled items, saved to a CSV
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-StartupImpact.ps1" -All -CsvPath "$env:USERPROFILE\Desktop\startup.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-All` | Also show disabled startup apps and items that aren't running |
+| `-Days <n>` | Days of boot history to read when run as admin (default 30) |
+| `-CsvPath <file>` | Export the full startup list to CSV |
+
+CPU and disk are totals since each app launched, so apps left open all day can rate higher than Task Manager shows. Works without admin; run as admin for boot history and SYSTEM services. **Changes nothing.**
 
 ---
 
