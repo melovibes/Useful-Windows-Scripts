@@ -12,6 +12,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Survey-Drive.ps1](01_Organization/Survey-Drive.ps1) | 01 Organization | Reports what's taking space on a messy drive: biggest folders and files, file types, age, old Windows installs and duplicates | Read-only | No |
 | [Get-StartupImpact.ps1](02_Performance/Get-StartupImpact.ps1) | 02 Performance | Lists startup apps, logon tasks and auto-start services with their CPU and disk impact, plus boot times and what Windows says slowed boot | Read-only | Optional |
 | [Clear-TempAndCache.ps1](02_Performance/Clear-TempAndCache.ps1) | 02 Performance | Measures temp folders, browser caches, crash dumps and the Windows Update cache, and clears them only with `-Clean` | Preview by default; deletes with -Clean after typing YES | Optional (needed for system caches) |
+| [Get-PowerReport.ps1](02_Performance/Get-PowerReport.ps1) | 02 Performance | Shows your power plan and mode, screen and sleep timeouts, wake settings, CPU limits and battery health, then lists anything wasting power or slowing the PC | Read-only | Optional |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
@@ -115,6 +116,26 @@ powershell -ExecutionPolicy Bypass -File ".\02_Performance\Clear-TempAndCache.ps
 | `-CloseBrowsers` | With `-Clean`, close open browsers so their caches can be cleared; otherwise open browsers are skipped |
 
 Preview works without admin. Cleaning C:\Windows\Temp, Delivery Optimization and the Windows Update cache needs admin, and the Windows Update clean briefly stops and restarts the Windows Update and BITS services. Files in use are skipped. Deleted files don't go to the Recycle Bin, but everything here is a cache that Windows and your apps rebuild.
+
+### Get-PowerReport.ps1
+
+Shows how your PC is set up for power in one place: the active power plan and Windows 11 power mode, when the screen turns off and the PC sleeps or hibernates (plugged in and on battery), which sleep states it supports, Fast Startup, wake timers, which devices can wake it and what woke it last, and the CPU minimum and maximum. On a laptop it also shows battery charge, health (today's full capacity compared to when it was new) and charge cycles. It finishes with a short list of things worth changing, like a CPU capped below 100%, a laptop that never sleeps on battery, or a worn battery. It changes no settings.
+
+```powershell
+# Power plan, sleep settings, battery health and findings
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-PowerReport.ps1"
+
+# Also save Windows' detailed battery report to the Desktop and open it
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-PowerReport.ps1" -BatteryReport -Open
+```
+
+| Switch | What it does |
+|---|---|
+| `-BatteryReport` | Also create Windows' detailed battery report (HTML, with capacity and usage history). Laptops only |
+| `-OutputPath <folder>` | Where to save the battery report (default: your Desktop) |
+| `-Open` | With `-BatteryReport`, open the report in your browser |
+
+Works without admin. Run as administrator to also see which apps or drivers are keeping the PC awake right now. Desktops without a battery skip the battery checks.
 
 ---
 
