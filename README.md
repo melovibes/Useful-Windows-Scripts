@@ -10,6 +10,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 |---|---|---|---|---|
 | [Organize_Downloads.py](01_Organization/Organize_Downloads.py) | 01 Organization | Sorts your Downloads folder into subfolders by file type | Moves files | No |
 | [Survey-Drive.ps1](01_Organization/Survey-Drive.ps1) | 01 Organization | Reports what's taking space on a messy drive: biggest folders and files, file types, age, old Windows installs and duplicates | Read-only | No |
+| [Sort-PhotosByDate.ps1](01_Organization/Sort-PhotosByDate.ps1) | 01 Organization | Sorts photos and videos into Year\Month folders by the date they were taken (EXIF, then file name, then file date) | Preview by default; moves or copies with -Run after typing YES, never deletes, undo log | No |
 | [Get-StartupImpact.ps1](02_Performance/Get-StartupImpact.ps1) | 02 Performance | Lists startup apps, logon tasks and auto-start services with their CPU and disk impact, plus boot times and what Windows says slowed boot | Read-only | Optional |
 | [Clear-TempAndCache.ps1](02_Performance/Clear-TempAndCache.ps1) | 02 Performance | Measures temp folders, browser caches, crash dumps and the Windows Update cache, and clears them only with `-Clean` | Preview by default; deletes with -Clean after typing YES | Optional (needed for system caches) |
 | [Get-PowerReport.ps1](02_Performance/Get-PowerReport.ps1) | 02 Performance | Shows your power plan and mode, screen and sleep timeouts, wake settings, CPU limits and battery health, then lists anything wasting power or slowing the PC | Read-only | Optional |
@@ -67,6 +68,37 @@ powershell -ExecutionPolicy Bypass -File ".\01_Organization\Survey-Drive.ps1" -P
 | `-HtmlPath <file>` | Save the report as an HTML page |
 
 Works without admin; run as admin to read more of an old Windows install. **Changes nothing.**
+
+### Sort-PhotosByDate.ps1
+
+Turns a messy phone dump or camera card into a tidy `2023\05 - May` library. For each photo or video it reads the "date taken" stamp from the file's EXIF data (JPEG, HEIC and most camera RAW files), falls back to a date in the file name (like `IMG_20230514_...` or `PXL_20230514...`), and finally to the file's Last Modified date. With no switches it only shows the plan: how many files go where and which date source each used. `-Run` moves the files (or `-Copy` copies them) after you type YES. It never deletes anything: name clashes get ` (2)` added, and a file that's byte-for-byte identical to one already in place is left where it is. Every run writes a CSV log, and `-UndoLog` puts moved files back.
+
+```powershell
+# Preview (changes nothing)
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Sort-PhotosByDate.ps1" -Path "$env:USERPROFILE\Pictures\Phone dump"
+
+# Copy a camera card into your photo library, keeping the originals
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Sort-PhotosByDate.ps1" -Path E:\DCIM -Destination D:\Photos -Run -Copy
+
+# Undo a move
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Sort-PhotosByDate.ps1" -UndoLog "D:\Photos\Sort-PhotosByDate-20261103-090000.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-Path <folder>` | Folder to sort (required) |
+| `-Destination <folder>` | Where the Year\Month folders go (default: same as `-Path`) |
+| `-Run` | Actually move the files (asks you to type YES) |
+| `-Copy` | With `-Run`, copy instead of move |
+| `-Force` | Skip the YES prompt |
+| `-NoFileDate` | Don't use Last Modified; undated files go to `Unknown date` |
+| `-NoRecurse` | Only sort files directly in `-Path` |
+| `-Extensions '.jpg','.mp4'` | File types to include (default: common photo, RAW and video types) |
+| `-MonthFormat Number\|Name\|Flat` | `2023\05`, `2023\05 - May` (default) or `2023-05` |
+| `-LogPath <file>` | Where to save the CSV log (default: in the destination) |
+| `-UndoLog <file>` | Move files from an earlier run back where they came from |
+
+Works without admin and needs no extra modules. Last Modified can be the date a file was copied rather than taken, so check the "Date source" counts in the preview.
 
 ---
 
