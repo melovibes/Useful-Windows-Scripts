@@ -13,6 +13,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-StartupImpact.ps1](02_Performance/Get-StartupImpact.ps1) | 02 Performance | Lists startup apps, logon tasks and auto-start services with their CPU and disk impact, plus boot times and what Windows says slowed boot | Read-only | Optional |
 | [Clear-TempAndCache.ps1](02_Performance/Clear-TempAndCache.ps1) | 02 Performance | Measures temp folders, browser caches, crash dumps and the Windows Update cache, and clears them only with `-Clean` | Preview by default; deletes with -Clean after typing YES | Optional (needed for system caches) |
 | [Get-PowerReport.ps1](02_Performance/Get-PowerReport.ps1) | 02 Performance | Shows your power plan and mode, screen and sleep timeouts, wake settings, CPU limits and battery health, then lists anything wasting power or slowing the PC | Read-only | Optional |
+| [Get-ResourceHogs.ps1](02_Performance/Get-ResourceHogs.ps1) | 02 Performance | Watches the PC for about 30 seconds and lists the apps using the most CPU, memory and disk, with system totals and plain-English findings | Read-only | Optional |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
@@ -136,6 +137,30 @@ powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-PowerReport.ps1" 
 | `-Open` | With `-BatteryReport`, open the report in your browser |
 
 Works without admin. Run as administrator to also see which apps or drivers are keeping the PC awake right now. Desktops without a battery skip the battery checks.
+
+### Get-ResourceHogs.ps1
+
+Answers "why is my PC slow right now?" It watches every running app for about 30 seconds, then shows the top CPU users (averaged over the whole sample, not a single moment like Task Manager), the biggest memory users, and the apps reading and writing the most data. Processes with the same name are added together, so all your browser processes show as one row. It also shows overall CPU, memory, commit charge and disk activity, and ends with a short list of findings, like one app using most of the CPU, low free memory, or a disk that's constantly busy. It stops nothing and changes no settings.
+
+```powershell
+# Watch for 30 seconds and show the top 10 in each list
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-ResourceHogs.ps1"
+
+# Show each process separately, with its process ID
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-ResourceHogs.ps1" -PerProcess
+
+# Watch for a minute and save everything to a CSV on the Desktop
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-ResourceHogs.ps1" -Seconds 60 -CsvPath "$env:USERPROFILE\Desktop\hogs.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-Seconds <n>` | How long to watch, 5 to 600 seconds (default 30) |
+| `-Top <n>` | Rows in each list (default 10) |
+| `-PerProcess` | Show each process separately instead of adding up processes with the same name |
+| `-CsvPath <file>` | Export every app (or process) with CPU, memory and I/O to CSV |
+
+Works without admin. Run as administrator to include a few protected system processes in the CPU list. Tip: start it, then do whatever feels slow so it shows up in the sample.
 
 ---
 
