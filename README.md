@@ -19,6 +19,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
 | [Test-SecurityPosture.ps1](04_Security/Test-SecurityPosture.ps1) | 04 Security | Checks Defender, firewall, BitLocker, UAC, Secure Boot, TPM, SMBv1, RDP, updates and local accounts, then lists problems with fixes | Read-only | Optional |
+| [Get-ListeningPorts.ps1](04_Security/Get-ListeningPorts.ps1) | 04 Security | Lists every program listening for network connections, who can reach it, whether it's signed and whether the firewall lets it in, plus your shared folders and plain-English findings | Read-only | Optional |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 
 ## 📂 Categories
@@ -294,6 +295,27 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Test-SecurityPosture.ps1
 | `-ExportPath <file>` | Also saves all results to a CSV file |
 | `-MaxSignatureAgeDays <n>` | Flags Defender signatures older than this (default 3) |
 | `-MaxUpdateAgeDays <n>` | Flags the last installed update if older than this (default 45) |
+
+### Get-ListeningPorts.ps1
+
+A read-only answer to "what is this PC exposing to my network?" It lists every program listening on a TCP port (and UDP with `-IncludeUdp`), whether it's reachable from the network or only from this PC, the process and any Windows services behind it, whether the file is signed and by whom, and whether an enabled inbound firewall rule lets it in. It also shows each network connection's profile (Public, Private or Domain) and the folders you share. It ends with findings: risky ports like Telnet, FTP, SMB, RDP, VNC or WinRM open to the network, unsigned programs or programs running from AppData, Temp or Downloads that are listening, and shared folders while you're on a Public network.
+
+```powershell
+# Quick check
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-ListeningPorts.ps1"
+
+# Everything, including loopback-only listeners and UDP, saved to a CSV
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-ListeningPorts.ps1" -All -IncludeUdp -CsvPath "$env:USERPROFILE\Desktop\ports.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-All` | Also show listeners that only accept connections from this PC |
+| `-IncludeUdp` | Also list UDP endpoints (longer and noisier; DNS, mDNS and SSDP are normal) |
+| `-SkipFirewall` | Don't match listeners to firewall rules (faster on PCs with many rules) |
+| `-CsvPath <file>` | Export the full listener list to CSV |
+
+Makes no network calls; it only reads Windows' own connection, firewall and share tables. Works without admin; run as admin for the paths and signatures of system services. **Changes nothing.**
 
 ---
 
