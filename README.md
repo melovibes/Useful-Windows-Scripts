@@ -15,6 +15,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Clear-TempAndCache.ps1](02_Performance/Clear-TempAndCache.ps1) | 02 Performance | Measures temp folders, browser caches, crash dumps and the Windows Update cache, and clears them only with `-Clean` | Preview by default; deletes with -Clean after typing YES | Optional (needed for system caches) |
 | [Get-PowerReport.ps1](02_Performance/Get-PowerReport.ps1) | 02 Performance | Shows your power plan and mode, screen and sleep timeouts, wake settings, CPU limits and battery health, then lists anything wasting power or slowing the PC | Read-only | Optional |
 | [Get-ResourceHogs.ps1](02_Performance/Get-ResourceHogs.ps1) | 02 Performance | Watches the PC for about 30 seconds and lists the apps using the most CPU, memory and disk, with system totals and plain-English findings | Read-only | Optional |
+| [Get-DiskHealth.ps1](02_Performance/Get-DiskHealth.ps1) | 02 Performance | Reports physical disk model, media, health/operational status (incl. predictive failure), volume free space, drive age (power-on hours or PnP first-seen), firmware + storage driver date/version, and SMART-style reliability counters (temp, wear, read/write and uncorrected errors) when available, plus plain-English findings | Read-only | Optional |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
@@ -194,6 +195,36 @@ powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-ResourceHogs.ps1"
 | `-CsvPath <file>` | Export every app (or process) with CPU, memory and I/O to CSV |
 
 Works without admin. Run as administrator to include a few protected system processes in the CPU list. Tip: start it, then do whatever feels slow so it shows up in the sample.
+
+### Get-DiskHealth.ps1
+
+A read-only answer to "is my disk dying or full?" It lists each physical disk (model, SSD/HDD, size, bus type, health and operational status — including Predictive Failure / Pred Fail when Windows reports them), every volume with size and free space, and flags drives that are low on space (default: 15% free or under 20 GB).
+
+For each disk it also reports **age** and **updates**:
+- **Age** prefers SMART-style `PowerOnHours` from `Get-StorageReliabilityCounter` (shown as days/years powered on). If those counters are missing, it falls back to when Windows first installed/saw the disk via PnP install date, and labels that source clearly (that is not power-on age).
+- **Firmware** revision from `Get-PhysicalDisk` / `Get-Disk` / `Win32_DiskDrive`.
+- **Firmware updated**: Windows almost never exposes a disk firmware flash date, so this is reported as n/a rather than guessed.
+- **Storage driver** version and driver date from `Win32_PnPSignedDriver` matched to the disk's PnP id (this is the Windows driver package date, not a firmware flash).
+
+When Windows exposes them, reliability counters show temperature (and max), wear percent, read/write errors including uncorrected counts, power-on hours and start/stop cycles. These are Windows' SMART-style counters, not a full vendor SMART dump — classic reallocated/pending sector attributes are only visible when the driver surfaces them through those error fields. With `-Path` it lists the largest top-level folders on that drive (a light check only — use Survey-Drive.ps1 for a deep survey). It ends with plain-English findings for Warning / Unhealthy / Failed / Predictive Failure disks, high wear, temperature, corrected and uncorrected I/O errors, and tight free space.
+
+```powershell
+# Quick health, age, firmware and free-space report
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-DiskHealth.ps1"
+
+# Also list the biggest folders on C:\, and save everything to a CSV
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-DiskHealth.ps1" -Path C:\ -Top 15 -CsvPath "$env:USERPROFILE\Desktop\disk-health.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-WarnPercent <n>` | Flag volumes at or below this free-space percent (default 15) |
+| `-WarnGB <n>` | Also flag volumes with under this many GB free (default 20; 0 disables) |
+| `-Path <drive or folder>` | Measure the largest top-level folders under this path |
+| `-Top <n>` | How many folders to show with `-Path` (default 10) |
+| `-CsvPath <file>` | Export disks, age/firmware, volumes and folders to CSV |
+
+Works without admin; run as admin to unlock temperature, wear, error and power-on-hour counters on more disks. **Changes nothing.**
 
 ---
 
