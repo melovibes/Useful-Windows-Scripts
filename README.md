@@ -23,6 +23,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Test-SecurityPosture.ps1](04_Security/Test-SecurityPosture.ps1) | 04 Security | Checks Defender, firewall, BitLocker, UAC, Secure Boot, TPM, SMBv1, RDP, updates and local accounts, then lists problems with fixes | Read-only | Optional |
 | [Get-ListeningPorts.ps1](04_Security/Get-ListeningPorts.ps1) | 04 Security | Lists every program listening for network connections, who can reach it, whether it's signed and whether the firewall lets it in, plus your shared folders and plain-English findings | Read-only | Optional |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
+| [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
 
 ## 📂 Categories
 
@@ -426,6 +427,29 @@ powershell -ExecutionPolicy Bypass -File ".\05_Backup\Backup-Folders.ps1" -Sourc
 | `-LogPath <file>` | Append robocopy output to a log file |
 
 Works without admin. Only writes to the destination you name, and only with `-Run`.
+
+---
+
+### Test-BackupHealth.ps1
+
+Answers "if this drive died tonight, what would I lose?" It checks every common way a Windows 11 PC gets backed up: System Restore and the age of the newest restore point, File History and when it last finished, whether Desktop, Documents and Pictures are backed up to OneDrive (and whether OneDrive is running), system image backups on connected drives, whether the Windows Recovery Environment is enabled, and, if the system drive uses BitLocker, whether a recovery key exists. Point `-BackupPath` at your own backup drive or NAS share (it understands the `<Destination>\<PC name>` layout from `Backup-Folders.ps1`) to check it's reachable, has free space and was written recently. It finishes with how much of your personal folders has no backup at all, and a list of findings with fixes.
+
+```powershell
+# Quick check
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Test-BackupHealth.ps1"
+
+# Also check your USB backup, flag anything older than 3 days, and save a CSV
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Test-BackupHealth.ps1" -BackupPath E:\Backups -MaxAgeDays 3 -CsvPath "$env:USERPROFILE\Desktop\backup-health.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-BackupPath 'a','b'` | Backup folders or shares to check (reachable, free space, newest change) |
+| `-MaxAgeDays <n>` | Flag backups older than this many days (default 7) |
+| `-MaxScanFiles <n>` | Most files to look at per backup path when finding the newest (default 50000) |
+| `-CsvPath <file>` | Save every check and finding to a CSV |
+
+Read-only: it changes nothing and starts no backups. Works without admin; run as administrator to also count restore points and check the recovery environment and BitLocker.
 
 ---
 
