@@ -19,6 +19,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-DiskHealth.ps1](02_Performance/Get-DiskHealth.ps1) | 02 Performance | Reports physical disk model, media, health/operational status (incl. predictive failure), volume free space, drive age (power-on hours or PnP first-seen), firmware + storage driver date/version, and SMART-style reliability counters (temp, wear, read/write and uncorrected errors) when available, plus plain-English findings | Read-only | Optional |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
+| [Get-ActiveConnections.ps1](03_Utilities/Get-ActiveConnections.ps1) | 03 Utilities | Shows which programs have network connections right now, whether each remote end is this PC, your LAN or the internet, whether the program is signed, and plain-English findings | Read-only | Optional |
 | [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
 | [Test-SecurityPosture.ps1](04_Security/Test-SecurityPosture.ps1) | 04 Security | Checks Defender, firewall, BitLocker, UAC, Secure Boot, TPM, SMBv1, RDP, updates and local accounts, then lists problems with fixes | Read-only | Optional |
 | [Get-ListeningPorts.ps1](04_Security/Get-ListeningPorts.ps1) | 04 Security | Lists every program listening for network connections, who can reach it, whether it's signed and whether the firewall lets it in, plus your shared folders and plain-English findings | Read-only | Optional |
@@ -335,6 +336,31 @@ powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Test-HomeNetwork.ps1" -
 | `-JsonPath <file>` | Save all results to a JSON file |
 
 Only talks to your gateway, your DNS servers, 1.1.1.1, 8.8.8.8 and targets you name. Works without admin. **Changes nothing.**
+
+---
+
+### Get-ActiveConnections.ps1
+
+A read-only answer to "what is this PC talking to?" It lists every established TCP connection and groups them by program: how many go to the internet, how many stay on your LAN, whether the file is signed and by whom, and the path. Destinations are grouped by remote address and port so a browser with many tabs does not flood the list. Loopback (this PC talking to itself) is hidden unless you pass `-All`. It ends with findings: unsigned programs or programs running from AppData, Temp or Downloads that reach the internet, names that sound like Windows components but are not signed by Microsoft, and programs with an unusually large number of internet connections. This is a snapshot of who is connected, not a bandwidth measurement — see `Get-ListeningPorts.ps1` for inbound listeners and `Test-HomeNetwork.ps1` for latency and Wi-Fi.
+
+```powershell
+# Quick snapshot
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Get-ActiveConnections.ps1"
+
+# Show each process separately, look up remote hostnames, and save every connection to a CSV
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Get-ActiveConnections.ps1" -PerProcess -Resolve -CsvPath "$env:USERPROFILE\Desktop\connections.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-All` | Also show loopback connections (this PC talking to itself) |
+| `-IncludeOther` | Also include TCP states other than Established (for example SynSent or TimeWait). Listening sockets are left out |
+| `-Resolve` | Look up a hostname for each remote address (queries your DNS servers; off by default) |
+| `-PerProcess` | Show each process separately instead of adding up processes with the same name |
+| `-Top <n>` | How many destination rows to show (default 40). The program list always includes every app |
+| `-CsvPath <file>` | Export every connection to CSV |
+
+Makes no network calls unless you pass `-Resolve`. Works without admin; run as admin for the paths and signatures of system processes. **Changes nothing.**
 
 ---
 
