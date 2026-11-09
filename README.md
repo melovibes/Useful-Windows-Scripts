@@ -11,6 +11,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Organize_Downloads.py](01_Organization/Organize_Downloads.py) | 01 Organization | Sorts your Downloads folder into subfolders by file type | Moves files | No |
 | [Survey-Drive.ps1](01_Organization/Survey-Drive.ps1) | 01 Organization | Reports what's taking space on a messy drive: biggest folders and files, file types, age, old Windows installs and duplicates | Read-only | No |
 | [Sort-PhotosByDate.ps1](01_Organization/Sort-PhotosByDate.ps1) | 01 Organization | Sorts photos and videos into Year\Month folders by the date they were taken (EXIF, then file name, then file date) | Preview by default; moves or copies with -Run after typing YES, never deletes, undo log | No |
+| [Find-OldLargeFiles.ps1](01_Organization/Find-OldLargeFiles.ps1) | 01 Organization | Finds files that are both old and large in Downloads, Desktop, Documents and other folders you name; skips OneDrive cloud-only placeholders by default; preview by default, optional move (with undo log), Recycle Bin, or permanent delete after typing YES | Preview by default; -MoveTo / -Clean / -UndoLog change files after YES | No |
 | [Get-StartupImpact.ps1](02_Performance/Get-StartupImpact.ps1) | 02 Performance | Lists startup apps, logon tasks and auto-start services with their CPU and disk impact, plus boot times and what Windows says slowed boot | Read-only | Optional |
 | [Clear-TempAndCache.ps1](02_Performance/Clear-TempAndCache.ps1) | 02 Performance | Measures temp folders, browser caches, crash dumps and the Windows Update cache, and clears them only with `-Clean` | Preview by default; deletes with -Clean after typing YES | Optional (needed for system caches) |
 | [Get-PowerReport.ps1](02_Performance/Get-PowerReport.ps1) | 02 Performance | Shows your power plan and mode, screen and sleep timeouts, wake settings, CPU limits and battery health, then lists anything wasting power or slowing the PC | Read-only | Optional |
@@ -101,6 +102,52 @@ powershell -ExecutionPolicy Bypass -File ".\01_Organization\Sort-PhotosByDate.ps
 | `-UndoLog <file>` | Move files from an earlier run back where they came from |
 
 Works without admin and needs no extra modules. Last Modified can be the date a file was copied rather than taken, so check the "Date source" counts in the preview.
+
+---
+
+### Find-OldLargeFiles.ps1
+
+Answers "what's eating space that I haven't touched in months?" It walks your Downloads, Desktop, Documents, Videos and Pictures (or folders you pass) and lists files that are both older than a cutoff (default 90 days by LastWriteTime) and larger than a size floor (default 50 MB). With no switches it only shows a summary by folder, a breakdown by file type (top extensions by size), the largest matches and plain-English findings (for example installers and archives that are often safe to archive).
+
+OneDrive Files On-Demand cloud-only placeholders are **skipped by default** so their logical cloud size is not counted as freeable local space and moving them does not force a download — pass `-IncludeCloudOnly` to include them (the Summary and Findings report how many were skipped).
+
+`-MoveTo` relocates matches into an archive folder after you type YES, keeping relative paths, never overwriting, and writing a CSV move log (default `<MoveTo>\Find-OldLargeFiles-<time>.csv`, or `-LogPath`) so `-UndoLog` can reverse the run. `-Clean` sends matches to the **Recycle Bin** after YES; add `-Permanent` with `-Clean` for a real delete. Junctions are skipped so linked folders aren't walked twice.
+
+```powershell
+# Preview (changes nothing)
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-OldLargeFiles.ps1"
+
+# Stricter cutoffs and a CSV of every match
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-OldLargeFiles.ps1" -OlderThanDays 180 -MinSizeMB 100 -CsvPath "$env:USERPROFILE\Desktop\old-large.csv"
+
+# Move old installers and archives from Downloads onto another drive
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-OldLargeFiles.ps1" -Path "$env:USERPROFILE\Downloads" -Extensions '.iso','.zip','.exe','.msi' -MoveTo D:\Archive\OldDownloads
+
+# Undo a previous -MoveTo run
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-OldLargeFiles.ps1" -UndoLog D:\Archive\OldDownloads\Find-OldLargeFiles-20261106-0900.csv
+
+# Send matches to the Recycle Bin (recoverable)
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-OldLargeFiles.ps1" -Clean
+```
+
+| Switch | What it does |
+|---|---|
+| `-Path 'a','b'` | Folders to scan (default Downloads, Desktop, Documents, Videos, Pictures) |
+| `-OlderThanDays <n>` | Only files last changed at least this many days ago (default 90; 0 = ignore age) |
+| `-MinSizeMB <n>` | Only files at least this many MB (default 50; 0 = any size) |
+| `-Top <n>` | How many largest files to show on screen (default 40; CSV still has all) |
+| `-Extensions '.iso','.zip'` | Only these file types |
+| `-Exclude 'a','b'` | Folder names to skip (default `node_modules`, `.git`, `AppData`, recycle/system folders) |
+| `-IncludeCloudOnly` | Include OneDrive cloud-only placeholders (skipped by default) |
+| `-MoveTo <folder>` | Move matches into this archive folder after typing YES; writes a CSV move log |
+| `-LogPath <file>` | Where to write the `-MoveTo` CSV log (default under `-MoveTo`) |
+| `-UndoLog <file>` | Reverse a previous `-MoveTo` run from its CSV log (asks YES; never overwrites) |
+| `-Clean` | Send matches to the Recycle Bin after typing YES |
+| `-Permanent` | With `-Clean` only: permanently delete instead of Recycle Bin |
+| `-Force` | With `-MoveTo`, `-Clean` or `-UndoLog`, skip the YES prompt |
+| `-CsvPath <file>` | Export every match to CSV |
+
+Works without admin. Preview changes nothing; `-MoveTo` refuses an archive path that overlaps a scanned folder; `-UndoLog` never overwrites an existing file at the original path.
 
 ---
 
