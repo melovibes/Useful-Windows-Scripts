@@ -23,6 +23,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
 | [Test-SecurityPosture.ps1](04_Security/Test-SecurityPosture.ps1) | 04 Security | Checks Defender, firewall, BitLocker, UAC, Secure Boot, TPM, SMBv1, RDP, updates and local accounts, then lists problems with fixes | Read-only | Optional |
 | [Get-ListeningPorts.ps1](04_Security/Get-ListeningPorts.ps1) | 04 Security | Lists every program listening for network connections, who can reach it, whether it's signed and whether the firewall lets it in, plus your shared folders and plain-English findings | Read-only | Optional |
+| [Find-OutdatedApps.ps1](04_Security/Find-OutdatedApps.ps1) | 04 Security | Lists installed apps and flags what's out of support (old Python, .NET, Node.js, Office, Flash, Java and more), what's missing well-known security fixes, what hasn't been updated in years, whether your Windows 11 version still gets updates, and optionally what winget can upgrade | Read-only | No |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
 
@@ -421,6 +422,29 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-ListeningPorts.ps1" 
 | `-CsvPath <file>` | Export the full listener list to CSV |
 
 Makes no network calls; it only reads Windows' own connection, firewall and share tables. Works without admin; run as admin for the paths and signatures of system services. **Changes nothing.**
+
+### Find-OutdatedApps.ps1
+
+A read-only check of the software on this PC, because old apps are an easy way in. It reads every installed desktop app (all users and your account) and flags the ones that are past end of support, like Flash, Silverlight, Python 2 and old Python 3, old .NET runtimes, old Node.js, Office 2010 through 2019, Adobe Reader XI and Java 6/7. It also flags 7-Zip and WinRAR versions from before well-known exploited bugs were fixed, apps nobody has updated in years, and runtimes installed several times side by side. It checks whether your Windows 11 version and edition still get security updates too. With `-CheckUpdates` it asks winget which apps have newer versions. It ends with a numbered list of what to fix first. Support dates sit in tables at the top of the script so they're easy to check and update.
+
+```powershell
+# Quick check (no network calls)
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-OutdatedApps.ps1"
+
+# Also ask winget for upgrades, show every app, and save the inventory to a CSV
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-OutdatedApps.ps1" -CheckUpdates -List -CsvPath "$env:USERPROFILE\Desktop\apps.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-CheckUpdates` | Ask winget which apps have newer versions (contacts winget's sources; off by default) |
+| `-StaleYears <n>` | Flag apps not installed or updated in this many years (default 3) |
+| `-IncludeStore` | Also list Microsoft Store apps for your account (they update themselves, so they aren't flagged) |
+| `-IncludeSystem` | Also list entries Windows hides as system components and updates |
+| `-List` | Print the full inventory, not just flagged apps |
+| `-CsvPath <file>` | Export the full inventory with flags to CSV |
+
+Makes no network calls unless you pass `-CheckUpdates`. No admin needed; apps installed only for other user accounts aren't listed. **Changes nothing**: to update an app, use its own updater or `winget upgrade --id <Id>`.
 
 ---
 
