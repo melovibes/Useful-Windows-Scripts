@@ -17,6 +17,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-PowerReport.ps1](02_Performance/Get-PowerReport.ps1) | 02 Performance | Shows your power plan and mode, screen and sleep timeouts, wake settings, CPU limits and battery health, then lists anything wasting power or slowing the PC | Read-only | Optional |
 | [Get-ResourceHogs.ps1](02_Performance/Get-ResourceHogs.ps1) | 02 Performance | Watches the PC for about 30 seconds and lists the apps using the most CPU, memory and disk, with system totals and plain-English findings | Read-only | Optional |
 | [Get-DiskHealth.ps1](02_Performance/Get-DiskHealth.ps1) | 02 Performance | Reports physical disk model, media, health/operational status (incl. predictive failure), volume free space, drive age (power-on hours or PnP first-seen), firmware + storage driver date/version, and SMART-style reliability counters (temp, wear, read/write and uncorrected errors) when available, plus plain-English findings | Read-only | Optional |
+| [Get-CrashHistory.ps1](02_Performance/Get-CrashHistory.ps1) | 02 Performance | Shows what's been crashing over the last 30 days: blue screens with their stop codes, unexpected shutdowns (crash vs. power loss), app crashes and hangs grouped by app and crashing module, WHEA hardware errors and disk errors, plus the Reliability Monitor score and plain-English findings | Read-only | Optional |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Get-ActiveConnections.ps1](03_Utilities/Get-ActiveConnections.ps1) | 03 Utilities | Shows which programs have network connections right now, whether each remote end is this PC, your LAN or the internet, whether the program is signed, and plain-English findings | Read-only | Optional |
@@ -276,6 +277,30 @@ powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-DiskHealth.ps1" -
 | `-CsvPath <file>` | Export disks, age/firmware, volumes and folders to CSV |
 
 Works without admin; run as admin to unlock temperature, wear, error and power-on-hour counters on more disks. **Changes nothing.**
+
+### Get-CrashHistory.ps1
+
+Answers "why does my PC keep crashing or restarting?" It reads the System and Application event logs and puts every problem from the last 30 days in one place. Blue screens are listed with their stop code and a short meaning (for example `0x0000009F DRIVER_POWER_STATE_FAILURE`, a driver failing sleep or wake). Unexpected shutdowns are split into crashes and plain power losses, so you can tell a bad driver from a tripped breaker or a held power button. App crashes and hangs are grouped by app, with how often and when each last happened and which module crashed; when the same DLL crashes several different apps, it gets called out, because that usually points at a graphics driver, overlay or antivirus add-on. It also lists WHEA hardware errors (CPU, memory, PCIe) and disk errors like bad blocks or retried reads, shows the Reliability Monitor stability score, and ends with a numbered list of what to look at first.
+
+```powershell
+# Last 30 days: summary, each problem type and findings
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-CrashHistory.ps1"
+
+# Look back 90 days and print every individual event
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-CrashHistory.ps1" -Days 90 -ShowEvents
+
+# Save every event to a CSV on the Desktop
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-CrashHistory.ps1" -CsvPath "$env:USERPROFILE\Desktop\crashes.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-Days <n>` | How many days back to look, 1 to 365 (default 30) |
+| `-Top <n>` | Rows in the app crash list (default 10) |
+| `-ShowEvents` | Also print every event found, newest first |
+| `-CsvPath <file>` | Export every event (time, type, source, app, details) to CSV |
+
+Works without admin. Run as administrator to also list the minidump files in `C:\Windows\Minidump`, which a tool like WinDbg or BlueScreenView can open to name the driver behind a blue screen. **Changes nothing** and makes no network calls. For a timeline view of the same data, run `perfmon /rel` to open Reliability Monitor.
 
 ---
 
