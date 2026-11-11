@@ -25,6 +25,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Test-SecurityPosture.ps1](04_Security/Test-SecurityPosture.ps1) | 04 Security | Checks Defender, firewall, BitLocker, UAC, Secure Boot, TPM, SMBv1, RDP, updates and local accounts, then lists problems with fixes | Read-only | Optional |
 | [Get-ListeningPorts.ps1](04_Security/Get-ListeningPorts.ps1) | 04 Security | Lists every program listening for network connections, who can reach it, whether it's signed and whether the firewall lets it in, plus your shared folders and plain-English findings | Read-only | Optional |
 | [Find-OutdatedApps.ps1](04_Security/Find-OutdatedApps.ps1) | 04 Security | Lists installed apps and flags what's out of support (old Python, .NET, Node.js, Office, Flash, Java and more), what's missing well-known security fixes, what hasn't been updated in years, whether your Windows 11 version still gets updates, and optionally what winget can upgrade | Read-only | No |
+| [Get-BrowserExtensions.ps1](04_Security/Get-BrowserExtensions.ps1) | 04 Security | Lists every extension in Chrome, Edge, Brave, Vivaldi, Opera and Firefox (all profiles) and flags the risky ones: actually granted access to every site plus powerful permissions, not from a store, loaded in developer mode, force-installed by policy, High/Medium ones allowed in Incognito, outdated Manifest V2, abandoned for years, or the same extension in more than one browser or profile | Read-only | No |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
 
@@ -470,6 +471,33 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-OutdatedApps.ps1" -
 | `-CsvPath <file>` | Export the full inventory with flags to CSV |
 
 Makes no network calls unless you pass `-CheckUpdates`. No admin needed; apps installed only for other user accounts aren't listed. **Changes nothing**: to update an app, use its own updater or `winget upgrade --id <Id>`.
+
+### Get-BrowserExtensions.ps1
+
+A read-only audit of your browser extensions, because an extension that can "read and change data on all websites" can read your bank and email tabs too. It reads extension files straight from every Chrome, Edge, Brave, Vivaldi, Chromium, Opera and Firefox profile on your account, so the browsers can stay closed. Site access and permissions come from what the browser has actually granted (for example "On click" or specific sites), not only from what the manifest asks for; optional permissions you have not granted are ignored. Each extension gets a High, Medium or Low rating based on that granted site access and permissions (cookies, web request interception, scripting, debugger, native app access, proxy and more). Allowed-in-Incognito is shown as a separate flag and does not raise the risk level. It also flags extensions that didn't come from a store, ones loaded unpacked in developer mode, ones force-installed through browser policy in the registry (a common adware trick on home PCs), High and Medium extensions allowed in Incognito or InPrivate, old Manifest V2 extensions, ones nobody has updated in years, and the same extension appearing in more than one browser or profile (including the same name under different IDs, which is common between Chrome, Edge and Firefox). The listing includes the install date when the browser recorded one. It ends with a numbered list of what to review first. Profiles are shown by folder name (`Default`, `Profile 1`), not by display name.
+
+```powershell
+# Quick check: risky extensions and findings
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-BrowserExtensions.ps1"
+
+# Everything in Chrome and Edge, with each extension's permissions
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-BrowserExtensions.ps1" -Browser Chrome,Edge -List -ShowPermissions
+
+# Save the full list to a CSV
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-BrowserExtensions.ps1" -CsvPath "$env:USERPROFILE\Desktop\extensions.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-Browser Chrome,Edge` | Only check these (Chrome, Edge, Brave, Vivaldi, Chromium, Opera, OperaGX, Firefox; default all) |
+| `-List` | Show every extension, not just Medium and High risk |
+| `-ShowPermissions` | Print each extension's permissions, site access (every site, specific sites, or on click) and ID |
+| `-IncludeDisabled` | Also list turned-off extensions (they're counted either way) |
+| `-IncludeBuiltIn` | Also list extensions bundled with the browser |
+| `-StaleDays <n>` | Flag extensions unchanged for this many days (default 730; 0 = off) |
+| `-CsvPath <file>` | Export every extension with permissions, source, install date, Incognito flag and risk to CSV |
+
+No admin needed and no network calls; only your own account's profiles are read. Risk ratings are a guide: a good ad blocker needs broad access too. **Changes nothing**: remove extensions from the browser's own extensions page (`chrome://extensions`, `edge://extensions`, `about:addons`). To stop an extension running in private windows, turn off "Allow in Incognito" or "Run in Private Windows" there.
 
 ---
 
