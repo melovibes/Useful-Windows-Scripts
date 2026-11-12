@@ -18,6 +18,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-ResourceHogs.ps1](02_Performance/Get-ResourceHogs.ps1) | 02 Performance | Watches the PC for about 30 seconds and lists the apps using the most CPU, memory and disk, with system totals and plain-English findings | Read-only | Optional |
 | [Get-DiskHealth.ps1](02_Performance/Get-DiskHealth.ps1) | 02 Performance | Reports physical disk model, media, health/operational status (incl. predictive failure), volume free space, drive age (power-on hours or PnP first-seen), firmware + storage driver date/version, and SMART-style reliability counters (temp, wear, read/write and uncorrected errors) when available, plus plain-English findings | Read-only | Optional |
 | [Get-CrashHistory.ps1](02_Performance/Get-CrashHistory.ps1) | 02 Performance | Shows what's been crashing over the last 30 days: blue screens with their stop codes, unexpected shutdowns (crash vs. power loss), app crashes and hangs grouped by app and crashing module, WHEA hardware errors and disk errors, plus the Reliability Monitor score and plain-English findings | Read-only | Optional |
+| [Get-DriverReport.ps1](02_Performance/Get-DriverReport.ps1) | 02 Performance | Lists devices with Device Manager errors and what each code means, the version and date of your key drivers (graphics, network, audio, storage, Bluetooth, chipset), third-party drivers that are years old or unsigned, leftover driver packages a newer one has replaced, and whether Windows Update may deliver drivers, plus plain-English findings | Read-only | No |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Get-ActiveConnections.ps1](03_Utilities/Get-ActiveConnections.ps1) | 03 Utilities | Shows which programs have network connections right now, whether each remote end is this PC, your LAN or the internet, whether the program is signed, and plain-English findings | Read-only | Optional |
@@ -301,6 +302,31 @@ powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-CrashHistory.ps1"
 | `-CsvPath <file>` | Export every event (time, type, source, app, details) to CSV |
 
 Works without admin. Run as administrator to also list the minidump files in `C:\Windows\Minidump`, which a tool like WinDbg or BlueScreenView can open to name the driver behind a blue screen. **Changes nothing** and makes no network calls. For a timeline view of the same data, run `perfmon /rel` to open Reliability Monitor.
+
+### Get-DriverReport.ps1
+
+Answers "is a driver behind this?" when Wi-Fi drops, audio crackles, the screen stutters or a USB device stops working. It lists every device with a yellow "!" in Device Manager, with the error code and a short meaning (for example code 43, the device reported a problem and was stopped). It shows the version, date and maker of the drivers that matter most: graphics, network, audio, storage, Bluetooth, chipset, camera and Windows Hello sign-in. It flags third-party drivers older than 5 years and any unsigned drivers. Microsoft's built-in drivers are left out of the "old" list by default, because many carry a placeholder 2006 date and are fine. It also reads the third-party packages in the driver store (`C:\Windows\INF\oem*.inf`), counts the ones no connected device uses, and points out older copies that a newer package from the same maker has probably replaced. For those it prints the `pnputil /delete-driver` command but never runs it. Last, it checks whether a policy stops Windows Update from delivering drivers, and ends with a numbered list of what to fix first.
+
+```powershell
+# Problem devices, key drivers, old and unsigned drivers, and findings
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-DriverReport.ps1"
+
+# Flag drivers older than 3 years and print every driver in use
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-DriverReport.ps1" -OlderThanYears 3 -ShowAll
+
+# Save every driver in use to a CSV on the Desktop
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-DriverReport.ps1" -CsvPath "$env:USERPROFILE\Desktop\drivers.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-OlderThanYears <n>` | Flag third-party drivers older than this, 1 to 20 (default 5) |
+| `-Top <n>` | Rows in the old drivers and driver store lists (default 15) |
+| `-IncludeMicrosoft` | Also count Microsoft's built-in drivers as old |
+| `-ShowAll` | Also print every driver in use (device, class, maker, version, date, signed) |
+| `-CsvPath <file>` | Export every driver in use with its old and unsigned flags to CSV |
+
+Works without admin and needs no extra modules. **Changes nothing** and makes no network calls. An unused driver package can still be needed for something you only plug in now and then, like a printer or a dock, so remove only the ones listed as replaced.
 
 ---
 
