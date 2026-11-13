@@ -20,6 +20,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-CrashHistory.ps1](02_Performance/Get-CrashHistory.ps1) | 02 Performance | Shows what's been crashing over the last 30 days: blue screens with their stop codes, unexpected shutdowns (crash vs. power loss), app crashes and hangs grouped by app and crashing module, WHEA hardware errors and disk errors, plus the Reliability Monitor score and plain-English findings | Read-only | Optional |
 | [Get-DriverReport.ps1](02_Performance/Get-DriverReport.ps1) | 02 Performance | Lists devices with Device Manager errors and what each code means, the version and date of your key drivers (graphics, network, audio, storage, Bluetooth, chipset), third-party drivers that are years old or unsigned, leftover driver packages a newer one has replaced, and whether Windows Update may deliver drivers, plus plain-English findings | Read-only | No |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
+| [Set-FocusMode.ps1](03_Utilities/Set-FocusMode.ps1) | 03 Utilities | Toggles a social-media block in the hosts file (Facebook, Instagram, Threads, X, TikTok, Snapchat, Reddit, Pinterest, Tumblr, Twitch; optional YouTube, LinkedIn, Discord) so you can focus | Edits hosts in a marked block; backs up first; run again or -Off to undo | To change (not for -Status) |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
 | [Get-ActiveConnections.ps1](03_Utilities/Get-ActiveConnections.ps1) | 03 Utilities | Shows which programs have network connections right now, whether each remote end is this PC, your LAN or the internet, whether the program is signed, and plain-English findings | Read-only | Optional |
 | [Find-SuspiciousStartup.ps1](04_Security/Find-SuspiciousStartup.ps1) | 04 Security | Flags suspicious services, startup entries and scheduled tasks | Read-only | Optional |
@@ -366,6 +367,43 @@ powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Block-Distractions.ps1"
 | `-Custom 'a.com','b.net'` | Your own extra domains |
 
 > **Heads up:** turn off "Secure DNS" (DNS-over-HTTPS) in Chrome, Edge, Brave and Firefox, or browsers will skip the hosts file. The huge `-FromSource` lists can slow down DNS on some PCs.
+
+### Set-FocusMode.ps1
+
+A simple on/off "focus" switch for social media. Running it with no switches toggles a clearly marked block in the Windows hosts file: if the block is missing, the listed sites are mapped to `0.0.0.0` and `::`; if it's already there, the block is removed. Only that marked block is changed, so your other hosts entries are left alone. Before the first change, a copy of the hosts file is saved next to it as `hosts.focus-backup` and is not overwritten later. The default list is Facebook, Instagram, Threads, X/Twitter, TikTok, Snapchat, Reddit, Pinterest, Tumblr and Twitch, including www / m / mobile variants and key app and CDN hostnames. YouTube, LinkedIn and Discord are optional because people often need them for work. For broader category blocklists (shopping, adult, gambling and so on) see `Block-Distractions.ps1`. The two scripts use different markers and can coexist; a site listed in both stays blocked until both blocks are removed.
+
+```powershell
+# Toggle focus on or off (run Terminal as administrator)
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Set-FocusMode.ps1"
+
+# Turn on, including YouTube
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Set-FocusMode.ps1" -On -IncludeYouTube
+
+# Turn off
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Set-FocusMode.ps1" -Off
+
+# Just check, no changes (admin not required)
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Set-FocusMode.ps1" -Status
+
+# Block now and automatically unblock in 45 minutes
+powershell -ExecutionPolicy Bypass -File ".\03_Utilities\Set-FocusMode.ps1" -On -Minutes 45
+```
+
+| Switch | What it does |
+|---|---|
+| (none) | Toggle: add the focus block if it is missing, remove it if it is present |
+| `-On` / `-Block` | Turn focus on (add or refresh the block) |
+| `-Off` / `-Unblock` | Turn focus off (remove the block, and any timed unblock task) |
+| `-Status` | Show whether the block is present, how many names it has, and which sites are in it. Changes nothing |
+| `-IncludeYouTube` | Also block YouTube (hosts cannot block only Shorts) |
+| `-IncludeLinkedIn` | Also block LinkedIn (off by default; many people need it for work) |
+| `-IncludeDiscord` | Also block Discord (off by default; some teams use it for work) |
+| `-Sites 'a.com','b.net'` | Extra domains to block |
+| `-Exclude 'a.com'` | Leave these domains unblocked, even if they are in the default list |
+| `-Minutes <n>` | After turning focus on, schedule a one-time task to run `-Off` in 1 to 1440 minutes |
+| `-Elevate` | If you are not already elevated, relaunch as administrator (approval prompt) |
+
+Needs an elevated Terminal to change the system hosts file; `-Status` does not. After a change, the script flushes the DNS cache — restart your browsers too, and close already-open tabs or apps, which may keep using a connection. **Secure DNS (DNS over HTTPS) in Chrome, Edge or Firefox can skip the hosts file**; turn it off if a site still loads. This script does not change browser settings. Edit the arrays at the top of the script to change the default list.
 
 ### Test-HomeNetwork.ps1
 
