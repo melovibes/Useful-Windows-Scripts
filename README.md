@@ -28,6 +28,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-ListeningPorts.ps1](04_Security/Get-ListeningPorts.ps1) | 04 Security | Lists every program listening for network connections, who can reach it, whether it's signed and whether the firewall lets it in, plus your shared folders and plain-English findings | Read-only | Optional |
 | [Find-OutdatedApps.ps1](04_Security/Find-OutdatedApps.ps1) | 04 Security | Lists installed apps and flags what's out of support (old Python, .NET, Node.js, Office, Flash, Java and more), what's missing well-known security fixes, what hasn't been updated in years, whether your Windows 11 version still gets updates, and optionally what winget can upgrade | Read-only | No |
 | [Get-BrowserExtensions.ps1](04_Security/Get-BrowserExtensions.ps1) | 04 Security | Lists every extension in Chrome, Edge, Brave, Vivaldi, Opera and Firefox (all profiles) and flags the risky ones: actually granted access to every site plus powerful permissions, not from a store, loaded in developer mode, force-installed by policy, High/Medium ones allowed in Incognito, outdated Manifest V2, abandoned for years, or the same extension in more than one browser or profile | Read-only | No |
+| [Get-PrivacyReport.ps1](04_Security/Get-PrivacyReport.ps1) | 04 Security | Shows which apps used your camera, microphone, location, screen capture and other private data recently (and which are using them right now), how many apps are allowed each one, and how Windows' own privacy settings are set (diagnostic data, advertising ID, speech, inking and typing, suggestions, Recall), plus plain-English findings | Read-only | No |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
 
@@ -562,6 +563,30 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-BrowserExtensions.ps
 | `-CsvPath <file>` | Export every extension with permissions, source, install date, Incognito flag and risk to CSV |
 
 No admin needed and no network calls; only your own account's profiles are read. Risk ratings are a guide: a good ad blocker needs broad access too. **Changes nothing**: remove extensions from the browser's own extensions page (`chrome://extensions`, `edge://extensions`, `about:addons`). To stop an extension running in private windows, turn off "Allow in Incognito" or "Run in Private Windows" there.
+
+### Get-PrivacyReport.ps1
+
+Answers "what just turned my webcam light on?" and "which apps have been listening?". Windows keeps a record of the last time each app used the camera, microphone, location, screen capture, contacts, calendar, files and other sensitive features, but Settings shows only part of it. This script reads that record and lists every app that used one of them in the last 30 days, newest first, with **IN USE NOW** for anything active as you run it. Desktop apps show their full path, so an unfamiliar program is easy to spot. It then shows, for each feature, whether it's turned off for the whole PC or just your account and how many apps are allowed or denied. Next comes a table of Windows' own privacy settings: diagnostic data level, advertising ID, tailored experiences, online speech recognition, inking and typing personalization, the website language list, app-launch tracking, Start and lock screen suggestions, and whether Recall has saved snapshots on a Copilot+ PC. It ends with a numbered list of what to look at first, such as a desktop app that used the microphone from a Temp or Downloads folder, or one whose file no longer exists.
+
+```powershell
+# Recent use, access per feature, privacy settings and findings
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-PrivacyReport.ps1"
+
+# Only the camera and microphone over the last week
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-PrivacyReport.ps1" -Days 7 -Feature Camera,Microphone
+
+# Every saved app choice, exported to a CSV on the Desktop
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-PrivacyReport.ps1" -ShowAll -CsvPath "$env:USERPROFILE\Desktop\privacy.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-Days <n>` | How far back "Recent use" looks, 1 to 3650 (default 30) |
+| `-Feature <names>` | Only check these: Camera, Microphone, Location, ScreenCapture, Contacts, Calendar, CallHistory, Email, Messages, Tasks, Notifications, AccountInfo, Documents, Pictures, Videos, FileSystem, Radios, AppDiagnostics, Presence, Activity |
+| `-ShowAll` | Also list every app with a saved allow or deny choice, used or not |
+| `-CsvPath <file>` | Export every app entry (feature, app, allowed, last used, in use now, path) to CSV |
+
+Works without admin and needs no extra modules. **Changes nothing** and makes no network calls. It only sees your own account's usage, so apps used by other people on the PC won't show up.
 
 ---
 
