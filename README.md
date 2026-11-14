@@ -29,6 +29,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Find-OutdatedApps.ps1](04_Security/Find-OutdatedApps.ps1) | 04 Security | Lists installed apps and flags what's out of support (old Python, .NET, Node.js, Office, Flash, Java and more), what's missing well-known security fixes, what hasn't been updated in years, whether your Windows 11 version still gets updates, and optionally what winget can upgrade | Read-only | No |
 | [Get-BrowserExtensions.ps1](04_Security/Get-BrowserExtensions.ps1) | 04 Security | Lists every extension in Chrome, Edge, Brave, Vivaldi, Opera and Firefox (all profiles) and flags the risky ones: actually granted access to every site plus powerful permissions, not from a store, loaded in developer mode, force-installed by policy, High/Medium ones allowed in Incognito, outdated Manifest V2, abandoned for years, or the same extension in more than one browser or profile | Read-only | No |
 | [Get-PrivacyReport.ps1](04_Security/Get-PrivacyReport.ps1) | 04 Security | Shows which apps used your camera, microphone, location, screen capture and other private data recently (and which are using them right now), how many apps are allowed each one, and how Windows' own privacy settings are set (diagnostic data, advertising ID, speech, inking and typing, suggestions, Recall), plus plain-English findings | Read-only | No |
+| [Get-WifiProfiles.ps1](04_Security/Get-WifiProfiles.ps1) | 04 Security | Lists every Wi-Fi network this PC remembers with its security (Open, WEP, WPA, WPA2, WPA3), whether it joins automatically, hidden networks, Public/Private category and when it was last used, then flags risky ones (open or WEP networks that auto-join, old WPA/TKIP, open networks marked Private, stale profiles); never reads passwords | Read-only; -Remove / -RemoveStale delete profiles after typing YES | No (removing an all-users profile may need it) |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
 
@@ -587,6 +588,36 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-PrivacyReport.ps1" -
 | `-CsvPath <file>` | Export every app entry (feature, app, allowed, last used, in use now, path) to CSV |
 
 Works without admin and needs no extra modules. **Changes nothing** and makes no network calls. It only sees your own account's usage, so apps used by other people on the PC won't show up.
+
+### Get-WifiProfiles.ps1
+
+Answers "which Wi-Fi networks will my laptop join on its own?" Windows remembers every network you've ever joined (hotels, airports, coffee shops, an old router) and many are set to connect automatically, so anyone can set up a hotspot with the same name and your PC joins it. This script lists every saved profile with its security type and cipher, whether it auto-connects, whether it's a hidden network, whether Windows treats it as Public or Private, and when you last connected. It ends with a list of findings, worst first: open or WEP networks that auto-join, WEP and WPA/TKIP networks that can be cracked, open networks marked Private (file sharing on), hidden networks (the PC calls out for them by name everywhere it goes), and profiles you haven't used in a year.
+
+Wi-Fi passwords are never read or shown. Profiles are exported to a temp folder with their keys still encrypted, parsed, and the folder is deleted right away. `-Remove` and `-RemoveStale` delete saved profiles with `netsh wlan delete profile` only after you type YES, and never the network you're connected to.
+
+```powershell
+# List saved Wi-Fi networks and findings (changes nothing)
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-WifiProfiles.ps1"
+
+# Flag anything unused for 6 months and export a CSV
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-WifiProfiles.ps1" -StaleDays 180 -CsvPath "$env:USERPROFILE\Desktop\wifi.csv"
+
+# Forget every stale network (asks YES first)
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-WifiProfiles.ps1" -RemoveStale
+
+# Forget specific networks by name
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-WifiProfiles.ps1" -Remove 'Airport Free WiFi','Hotel Guest'
+```
+
+| Switch | What it does |
+|---|---|
+| `-StaleDays <n>` | Flag profiles not connected for this many days (default 365; 0 = off) |
+| `-Remove 'a','b'` | Delete these saved profiles after typing YES |
+| `-RemoveStale` | Delete every profile flagged as stale after typing YES |
+| `-Force` | With `-Remove` or `-RemoveStale`, skip the YES prompt |
+| `-CsvPath <file>` | Export the profile table to CSV (contains network names; keep it private) |
+
+Works without admin. A PC with no Wi-Fi adapter, or with the WLAN AutoConfig service stopped, has nothing to report. You'll need the password again to rejoin a removed network.
 
 ---
 
