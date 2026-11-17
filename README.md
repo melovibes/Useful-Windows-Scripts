@@ -12,6 +12,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Survey-Drive.ps1](01_Organization/Survey-Drive.ps1) | 01 Organization | Reports what's taking space on a messy drive: biggest folders and files, file types, age, old Windows installs and duplicates | Read-only | No |
 | [Sort-PhotosByDate.ps1](01_Organization/Sort-PhotosByDate.ps1) | 01 Organization | Sorts photos and videos into Year\Month folders by the date they were taken (EXIF, then file name, then file date) | Preview by default; moves or copies with -Run after typing YES, never deletes, undo log | No |
 | [Find-OldLargeFiles.ps1](01_Organization/Find-OldLargeFiles.ps1) | 01 Organization | Finds files that are both old and large in Downloads, Desktop, Documents and other folders you name; skips OneDrive cloud-only placeholders by default; preview by default, optional move (with undo log), Recycle Bin, or permanent delete after typing YES | Preview by default; -MoveTo / -Clean / -UndoLog change files after YES | No |
+| [Find-AppLeftovers.ps1](01_Organization/Find-AppLeftovers.ps1) | 01 Organization | Finds folders left behind by apps you already uninstalled in AppData, ProgramData and Program Files by checking each one against installed programs, Store apps, services, startup entries and scheduled tasks, then shows how much space they use and how long since anything inside changed; also lists Start Menu and Desktop shortcuts whose target no longer exists | Read-only; `-Recycle` asks about each leftover folder or broken shortcut and only sends it to the Recycle Bin | No |
 | [Get-StartupImpact.ps1](02_Performance/Get-StartupImpact.ps1) | 02 Performance | Lists startup apps, logon tasks and auto-start services with their CPU and disk impact, plus boot times and what Windows says slowed boot | Read-only | Optional |
 | [Clear-TempAndCache.ps1](02_Performance/Clear-TempAndCache.ps1) | 02 Performance | Measures temp folders, browser caches, crash dumps and the Windows Update cache, and clears them only with `-Clean` | Preview by default; deletes with -Clean after typing YES | Optional (needed for system caches) |
 | [Get-PowerReport.ps1](02_Performance/Get-PowerReport.ps1) | 02 Performance | Shows your power plan and mode, screen and sleep timeouts, wake settings, CPU limits and battery health, then lists anything wasting power or slowing the PC | Read-only | Optional |
@@ -156,6 +157,38 @@ powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-OldLargeFiles.p
 | `-CsvPath <file>` | Export every match to CSV |
 
 Works without admin. Preview changes nothing; `-MoveTo` refuses an archive path that overlaps a scanned folder; `-UndoLog` never overwrites an existing file at the original path.
+
+### Find-AppLeftovers.ps1
+
+Uninstallers often leave settings, caches and logs behind. After a few years, `%LOCALAPPDATA%`, `%APPDATA%` and `C:\ProgramData` can hold gigabytes of folders that belong to apps that are long gone. This script lists the top-level folders in those places and in Program Files. It then checks each one against what is still on the PC: installed programs, Store apps, services, startup entries and scheduled tasks.
+
+Folders that match nothing and aren't part of Windows are sorted into **High** (nothing inside changed in 180 days), **Empty** and **Medium** (changed recently, so it could be a portable app or a launcher's data). It also finds Start Menu and Desktop shortcuts (yours and the all-users / Public ones) whose target file or folder is gone. The report ends with the total space you could free from High and Empty folders plus those broken shortcuts. Matching is by name, so read the list before you remove anything.
+
+```powershell
+# List likely leftovers in AppData, ProgramData and Program Files, plus broken shortcuts
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-AppLeftovers.ps1"
+
+# Only your own AppData, stricter age cutoff, and show what each kept folder matched
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-AppLeftovers.ps1" -Scope Roaming,Local -Days 365 -ShowMatched
+
+# Only leftovers of at least 10 MB that have not changed in a year, and save a CSV
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-AppLeftovers.ps1" -MinSizeMB 10 -OlderThanDays 365 -CsvPath "$env:USERPROFILE\Desktop\leftovers.csv"
+
+# Review High and Empty folders and broken shortcuts one by one and send the ones you pick to the Recycle Bin
+powershell -ExecutionPolicy Bypass -File ".\01_Organization\Find-AppLeftovers.ps1" -Recycle
+```
+
+| Switch | What it does |
+|---|---|
+| `-Days <1-3650>` | Days with no changes before a folder counts as High (default 180) |
+| `-MinSizeMB <n>` | Hide leftover folders smaller than this (default 1); empty folders and broken shortcuts always show |
+| `-OlderThanDays <n>` | Only show leftover folders and broken shortcuts whose newest item is older than this many days (default 0, off) |
+| `-Scope <list>` | Which folder locations to check: any of `Roaming`, `Local`, `LocalPrograms`, `ProgramData`, `ProgramFiles` (default: all). Shortcuts are always checked |
+| `-ShowMatched` | Also list the folders that were kept and which app, publisher or path they matched |
+| `-CsvPath <file>` | Export every folder checked, with verdict, size and match, plus every broken shortcut, to a CSV (slower: sizes every folder) |
+| `-Recycle` | After the report, ask y/N for each High or Empty folder and each broken shortcut and send the ones you approve to the Recycle Bin |
+
+Read-only unless you use `-Recycle`, and even then nothing is permanently deleted: each folder or shortcut needs its own "y" and goes to the Recycle Bin. It never follows or removes junctions and links, and makes no network calls. Works without admin. Some ProgramData and Program Files sizes show as "partial", and `-Recycle` skips folders you don't have rights to.
 
 ---
 
