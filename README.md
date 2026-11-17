@@ -30,6 +30,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-BrowserExtensions.ps1](04_Security/Get-BrowserExtensions.ps1) | 04 Security | Lists every extension in Chrome, Edge, Brave, Vivaldi, Opera and Firefox (all profiles) and flags the risky ones: actually granted access to every site plus powerful permissions, not from a store, loaded in developer mode, force-installed by policy, High/Medium ones allowed in Incognito, outdated Manifest V2, abandoned for years, or the same extension in more than one browser or profile | Read-only | No |
 | [Get-PrivacyReport.ps1](04_Security/Get-PrivacyReport.ps1) | 04 Security | Shows which apps used your camera, microphone, location, screen capture and other private data recently (and which are using them right now), how many apps are allowed each one, and how Windows' own privacy settings are set (diagnostic data, advertising ID, speech, inking and typing, suggestions, Recall), plus plain-English findings | Read-only | No |
 | [Get-WifiProfiles.ps1](04_Security/Get-WifiProfiles.ps1) | 04 Security | Lists every Wi-Fi network this PC remembers with its security (Open, WEP, WPA, WPA2, WPA3), whether it joins automatically, hidden networks, Public/Private category and when it was last used, then flags risky ones (open or WEP networks that auto-join, old WPA/TKIP, open networks marked Private, stale profiles); never reads passwords | Read-only; -Remove / -RemoveStale delete profiles after typing YES | No (removing an all-users profile may need it) |
+| [Get-UpdateHealth.ps1](04_Security/Get-UpdateHealth.ps1) | 04 Security | Checks whether Windows Update is actually working: last successful check and install, the newest cumulative and Defender updates, pending restarts and why, the update services, paused updates and leftover policies (WSUS, deferrals, version pins, updates turned off), free space and cache size, and updates that keep failing with what their error codes mean, plus plain-English fixes; optionally lists updates not yet installed | Read-only; no network calls unless `-CheckOnline` | No |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
 | [Export-PCSnapshot.ps1](05_Backup/Export-PCSnapshot.ps1) | 05 Backup | Saves a dated "how this PC is set up" snapshot for rebuilding after a reset or on a new PC: a `winget import` file, every installed desktop and Store app, PowerShell modules, printers, mapped drives, user PATH, fonts you added, Windows features and a system summary, plus restore steps; can copy browser bookmarks, zip it, and show apps added, removed or updated since an older snapshot | Changes nothing; writes only the snapshot folder; never saves passwords, keys or variable values | Optional |
@@ -619,6 +620,33 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-WifiProfiles.ps1" -R
 | `-CsvPath <file>` | Export the profile table to CSV (contains network names; keep it private) |
 
 Works without admin. A PC with no Wi-Fi adapter, or with the WLAN AutoConfig service stopped, has nothing to report. You'll need the password again to rejoin a removed network.
+
+### Get-UpdateHealth.ps1
+
+"Your device is missing important security and quality fixes" usually has a boring cause: updates paused months ago, one update failing every night with the same error, a restart nobody did, a disabled service, or a policy left behind by an old tweak or debloat tool. This script checks all of that in one pass and ends with a numbered list of what to fix first.
+
+It shows your Windows version and uptime, when Windows last checked for and installed updates, when the newest cumulative update and Defender definitions went in, whether a restart is pending (and which part of Windows is waiting), the state of the six services updates depend on, paused updates, active hours and any Windows Update policies, free space on the system drive and the size of the update download cache. It then reads the local update history, lists failures, flags any update that failed more than once and never succeeded, and explains common error codes such as `0x800F081F` and `0x80070643`.
+
+```powershell
+# Check Windows Update health (last 90 days of history)
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-UpdateHealth.ps1"
+
+# Last 30 days, and also ask Windows Update what's waiting to install
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-UpdateHealth.ps1" -Days 30 -CheckOnline
+
+# Save the update history to a CSV
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-UpdateHealth.ps1" -CsvPath "$env:USERPROFILE\Desktop\update-history.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-Days <7-730>` | How many days of update history to check (default 90) |
+| `-Top <n>` | Rows in the failure list (default 15) |
+| `-CheckOnline` | Also ask Windows Update (or your WSUS server) which updates are available but not installed; downloads nothing |
+| `-ShowAll` | Print every history entry in the window, not just failures |
+| `-CsvPath <file>` | Export the history in the window to a CSV |
+
+Changes nothing: it never installs, pauses, resets or restarts anything, and fixes are printed as suggestions. Without `-CheckOnline` it makes no network calls. Works without admin.
 
 ---
 
