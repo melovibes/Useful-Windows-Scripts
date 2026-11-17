@@ -32,6 +32,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-WifiProfiles.ps1](04_Security/Get-WifiProfiles.ps1) | 04 Security | Lists every Wi-Fi network this PC remembers with its security (Open, WEP, WPA, WPA2, WPA3), whether it joins automatically, hidden networks, Public/Private category and when it was last used, then flags risky ones (open or WEP networks that auto-join, old WPA/TKIP, open networks marked Private, stale profiles); never reads passwords | Read-only; -Remove / -RemoveStale delete profiles after typing YES | No (removing an all-users profile may need it) |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
+| [Export-PCSnapshot.ps1](05_Backup/Export-PCSnapshot.ps1) | 05 Backup | Saves a dated "how this PC is set up" snapshot for rebuilding after a reset or on a new PC: a `winget import` file, every installed desktop and Store app, PowerShell modules, printers, mapped drives, user PATH, fonts you added, Windows features and a system summary, plus restore steps; can copy browser bookmarks, zip it, and show apps added, removed or updated since an older snapshot | Changes nothing; writes only the snapshot folder; never saves passwords, keys or variable values | Optional |
 
 ## 📂 Categories
 
@@ -673,6 +674,36 @@ powershell -ExecutionPolicy Bypass -File ".\05_Backup\Test-BackupHealth.ps1" -Ba
 | `-CsvPath <file>` | Save every check and finding to a CSV |
 
 Read-only: it changes nothing and starts no backups. Works without admin; run as administrator to also count restore points and check the recovery environment and BitLocker.
+
+### Export-PCSnapshot.ps1
+
+File backups save your documents, but not the list of everything you'd have to set up again after a reset or on a new PC. This script writes that list into one dated folder: an `apps-winget.json` you can feed straight to `winget import`, every installed desktop app (name, version, publisher, install date) and Microsoft Store app, PowerShell modules you added, printers with their drivers and ports, mapped network drives, the folders in your user PATH, fonts you installed, the Windows optional features you turned on, and a short system summary (Windows version, model, CPU, memory, disks). A `RESTORE.txt` in the folder walks through putting it all back. Run it again later with `-Compare` pointed at an older snapshot to see which apps were added, removed or updated in between.
+
+It never saves passwords, product keys, Wi-Fi keys, serial numbers or environment variable values (only their names). `-IncludeBookmarks` also copies the bookmark files from Chrome, Edge and Brave profiles. The snapshot names your apps, printers and shares, so keep it with your private backups.
+
+```powershell
+# Save a snapshot to Documents\PC-Snapshots
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Export-PCSnapshot.ps1"
+
+# Save to your backup drive, with bookmarks, and zip it
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Export-PCSnapshot.ps1" -OutputPath E:\Backups\Snapshots -IncludeBookmarks -Zip
+
+# See what changed since an older snapshot
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Export-PCSnapshot.ps1" -Compare "$env:USERPROFILE\Documents\PC-Snapshots\MYPC_2026-10-01_0900"
+
+# On the new PC, reinstall apps from the snapshot folder
+winget import -i .\apps-winget.json --accept-package-agreements --accept-source-agreements
+```
+
+| Switch | What it does |
+|---|---|
+| `-OutputPath <folder>` | Where snapshots go (default `Documents\PC-Snapshots`); each run makes a new `<PC name>_<date>` folder |
+| `-Compare <folder>` | An older snapshot to compare apps against (also saves `changes-since-compare.csv`) |
+| `-NoWinget` | Skip `winget export` (no `apps-winget.json`) |
+| `-IncludeBookmarks` | Copy Chrome, Edge and Brave bookmark files into the snapshot (Firefox not included) |
+| `-Zip` | Also pack the snapshot into a `.zip` next to the folder |
+
+Changes nothing on the PC. `winget export` may refresh winget's package list from Microsoft if it's out of date; use `-NoWinget` to avoid that. Works without admin; run as administrator to also list Windows optional features.
 
 ---
 
