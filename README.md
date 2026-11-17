@@ -29,9 +29,11 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Find-OutdatedApps.ps1](04_Security/Find-OutdatedApps.ps1) | 04 Security | Lists installed apps and flags what's out of support (old Python, .NET, Node.js, Office, Flash, Java and more), what's missing well-known security fixes, what hasn't been updated in years, whether your Windows 11 version still gets updates, and optionally what winget can upgrade | Read-only | No |
 | [Get-BrowserExtensions.ps1](04_Security/Get-BrowserExtensions.ps1) | 04 Security | Lists every extension in Chrome, Edge, Brave, Vivaldi, Opera and Firefox (all profiles) and flags the risky ones: actually granted access to every site plus powerful permissions, not from a store, loaded in developer mode, force-installed by policy, High/Medium ones allowed in Incognito, outdated Manifest V2, abandoned for years, or the same extension in more than one browser or profile | Read-only | No |
 | [Get-PrivacyReport.ps1](04_Security/Get-PrivacyReport.ps1) | 04 Security | Shows which apps used your camera, microphone, location, screen capture and other private data recently (and which are using them right now), how many apps are allowed each one, and how Windows' own privacy settings are set (diagnostic data, advertising ID, speech, inking and typing, suggestions, Recall), plus plain-English findings | Read-only | No |
+| [Get-WifiProfiles.ps1](04_Security/Get-WifiProfiles.ps1) | 04 Security | Lists every Wi-Fi network this PC remembers with its security (Open, WEP, WPA, WPA2, WPA3), whether it joins automatically, hidden networks, Public/Private category and when it was last used, then flags risky ones (open or WEP networks that auto-join, old WPA/TKIP, open networks marked Private, stale profiles); never reads passwords | Read-only; -Remove / -RemoveStale delete profiles after typing YES | No (removing an all-users profile may need it) |
 | [Get-UpdateHealth.ps1](04_Security/Get-UpdateHealth.ps1) | 04 Security | Checks whether Windows Update is actually working: last successful check and install, the newest cumulative and Defender updates, pending restarts and why, the update services, paused updates and leftover policies (WSUS, deferrals, version pins, updates turned off), free space and cache size, and updates that keep failing with what their error codes mean, plus plain-English fixes; optionally lists updates not yet installed | Read-only; no network calls unless `-CheckOnline` | No |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
+| [Export-PCSnapshot.ps1](05_Backup/Export-PCSnapshot.ps1) | 05 Backup | Saves a dated "how this PC is set up" snapshot for rebuilding after a reset or on a new PC: a `winget import` file, every installed desktop and Store app, PowerShell modules, printers, mapped drives, user PATH, fonts you added, Windows features and a system summary, plus restore steps; can copy browser bookmarks, zip it, and show apps added, removed or updated since an older snapshot | Changes nothing; writes only the snapshot folder; never saves passwords, keys or variable values | Optional |
 
 ## 📂 Categories
 
@@ -589,6 +591,36 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-PrivacyReport.ps1" -
 
 Works without admin and needs no extra modules. **Changes nothing** and makes no network calls. It only sees your own account's usage, so apps used by other people on the PC won't show up.
 
+### Get-WifiProfiles.ps1
+
+Answers "which Wi-Fi networks will my laptop join on its own?" Windows remembers every network you've ever joined (hotels, airports, coffee shops, an old router) and many are set to connect automatically, so anyone can set up a hotspot with the same name and your PC joins it. This script lists every saved profile with its security type and cipher, whether it auto-connects, whether it's a hidden network, whether Windows treats it as Public or Private, and when you last connected. It ends with a list of findings, worst first: open or WEP networks that auto-join, WEP and WPA/TKIP networks that can be cracked, open networks marked Private (file sharing on), hidden networks (the PC calls out for them by name everywhere it goes), and profiles you haven't used in a year.
+
+Wi-Fi passwords are never read or shown. Profiles are exported to a temp folder with their keys still encrypted, parsed, and the folder is deleted right away. `-Remove` and `-RemoveStale` delete saved profiles with `netsh wlan delete profile` only after you type YES, and never the network you're connected to.
+
+```powershell
+# List saved Wi-Fi networks and findings (changes nothing)
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-WifiProfiles.ps1"
+
+# Flag anything unused for 6 months and export a CSV
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-WifiProfiles.ps1" -StaleDays 180 -CsvPath "$env:USERPROFILE\Desktop\wifi.csv"
+
+# Forget every stale network (asks YES first)
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-WifiProfiles.ps1" -RemoveStale
+
+# Forget specific networks by name
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-WifiProfiles.ps1" -Remove 'Airport Free WiFi','Hotel Guest'
+```
+
+| Switch | What it does |
+|---|---|
+| `-StaleDays <n>` | Flag profiles not connected for this many days (default 365; 0 = off) |
+| `-Remove 'a','b'` | Delete these saved profiles after typing YES |
+| `-RemoveStale` | Delete every profile flagged as stale after typing YES |
+| `-Force` | With `-Remove` or `-RemoveStale`, skip the YES prompt |
+| `-CsvPath <file>` | Export the profile table to CSV (contains network names; keep it private) |
+
+Works without admin. A PC with no Wi-Fi adapter, or with the WLAN AutoConfig service stopped, has nothing to report. You'll need the password again to rejoin a removed network.
+
 ### Get-UpdateHealth.ps1
 
 "Your device is missing important security and quality fixes" usually has a boring cause: updates paused months ago, one update failing every night with the same error, a restart nobody did, a disabled service, or a policy left behind by an old tweak or debloat tool. This script checks all of that in one pass and ends with a numbered list of what to fix first.
@@ -670,6 +702,36 @@ powershell -ExecutionPolicy Bypass -File ".\05_Backup\Test-BackupHealth.ps1" -Ba
 | `-CsvPath <file>` | Save every check and finding to a CSV |
 
 Read-only: it changes nothing and starts no backups. Works without admin; run as administrator to also count restore points and check the recovery environment and BitLocker.
+
+### Export-PCSnapshot.ps1
+
+File backups save your documents, but not the list of everything you'd have to set up again after a reset or on a new PC. This script writes that list into one dated folder: an `apps-winget.json` you can feed straight to `winget import`, every installed desktop app (name, version, publisher, install date) and Microsoft Store app, PowerShell modules you added, printers with their drivers and ports, mapped network drives, the folders in your user PATH, fonts you installed, the Windows optional features you turned on, and a short system summary (Windows version, model, CPU, memory, disks). A `RESTORE.txt` in the folder walks through putting it all back. Run it again later with `-Compare` pointed at an older snapshot to see which apps were added, removed or updated in between.
+
+It never saves passwords, product keys, Wi-Fi keys, serial numbers or environment variable values (only their names). `-IncludeBookmarks` also copies the bookmark files from Chrome, Edge and Brave profiles. The snapshot names your apps, printers and shares, so keep it with your private backups.
+
+```powershell
+# Save a snapshot to Documents\PC-Snapshots
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Export-PCSnapshot.ps1"
+
+# Save to your backup drive, with bookmarks, and zip it
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Export-PCSnapshot.ps1" -OutputPath E:\Backups\Snapshots -IncludeBookmarks -Zip
+
+# See what changed since an older snapshot
+powershell -ExecutionPolicy Bypass -File ".\05_Backup\Export-PCSnapshot.ps1" -Compare "$env:USERPROFILE\Documents\PC-Snapshots\MYPC_2026-10-01_0900"
+
+# On the new PC, reinstall apps from the snapshot folder
+winget import -i .\apps-winget.json --accept-package-agreements --accept-source-agreements
+```
+
+| Switch | What it does |
+|---|---|
+| `-OutputPath <folder>` | Where snapshots go (default `Documents\PC-Snapshots`); each run makes a new `<PC name>_<date>` folder |
+| `-Compare <folder>` | An older snapshot to compare apps against (also saves `changes-since-compare.csv`) |
+| `-NoWinget` | Skip `winget export` (no `apps-winget.json`) |
+| `-IncludeBookmarks` | Copy Chrome, Edge and Brave bookmark files into the snapshot (Firefox not included) |
+| `-Zip` | Also pack the snapshot into a `.zip` next to the folder |
+
+Changes nothing on the PC. `winget export` may refresh winget's package list from Microsoft if it's out of date; use `-NoWinget` to avoid that. Works without admin; run as administrator to also list Windows optional features.
 
 ---
 
