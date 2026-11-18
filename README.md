@@ -32,6 +32,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-PrivacyReport.ps1](04_Security/Get-PrivacyReport.ps1) | 04 Security | Shows which apps used your camera, microphone, location, screen capture and other private data recently (and which are using them right now), how many apps are allowed each one, and how Windows' own privacy settings are set (diagnostic data, advertising ID, speech, inking and typing, suggestions, Recall), plus plain-English findings | Read-only | No |
 | [Get-WifiProfiles.ps1](04_Security/Get-WifiProfiles.ps1) | 04 Security | Lists every Wi-Fi network this PC remembers with its security (Open, WEP, WPA, WPA2, WPA3), whether it joins automatically, hidden networks, Public/Private category and when it was last used, then flags risky ones (open or WEP networks that auto-join, old WPA/TKIP, open networks marked Private, stale profiles); never reads passwords | Read-only; -Remove / -RemoveStale delete profiles after typing YES | No (removing an all-users profile may need it) |
 | [Get-UpdateHealth.ps1](04_Security/Get-UpdateHealth.ps1) | 04 Security | Checks whether Windows Update is actually working: last successful check and install, the newest cumulative and Defender updates, pending restarts and why, the update services, paused updates and leftover policies (WSUS, deferrals, version pins, updates turned off), free space and cache size, and updates that keep failing with what their error codes mean, plus plain-English fixes; optionally lists updates not yet installed | Read-only; no network calls unless `-CheckOnline` | No |
+| [Find-RemoteAccess.ps1](04_Security/Find-RemoteAccess.ps1) | 04 Security | Shows every way someone could remotely see or control this PC: Remote Desktop (with NLA, firewall and allowed users), Remote Assistance, Quick Assist, OpenSSH Server and its authorized keys, WinRM, Remote Registry, plus remote-control, support and RMM apps such as TeamViewer, AnyDesk, ScreenConnect, RustDesk and VNC, with install date, whether they start with Windows and which ports they listen on; flags recently installed ones as a possible tech-support scam; also checks for unsigned or user-folder programs listening or holding outbound connections, proxy and VPN settings, portproxy relays, unexpected tunnel adapters, known tunnel and bandwidth-sharing tools (ngrok, cloudflared, frp, Chisel, Tor, reverse SSH, Honeygain and similar), and inbound firewall rules for programs in user folders | Read-only | Optional |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
 | [Export-PCSnapshot.ps1](05_Backup/Export-PCSnapshot.ps1) | 05 Backup | Saves a dated "how this PC is set up" snapshot for rebuilding after a reset or on a new PC: a `winget import` file, every installed desktop and Store app, PowerShell modules, printers, mapped drives, user PATH, fonts you added, Windows features and a system summary, plus restore steps; can copy browser bookmarks, zip it, and show apps added, removed or updated since an older snapshot | Changes nothing; writes only the snapshot folder; never saves passwords, keys or variable values | Optional |
@@ -680,6 +681,37 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-UpdateHealth.ps1" -C
 | `-CsvPath <file>` | Export the history in the window to a CSV |
 
 Changes nothing: it never installs, pauses, resets or restarts anything, and fixes are printed as suggestions. Without `-CheckOnline` it makes no network calls. Works without admin.
+
+### Find-RemoteAccess.ps1
+
+Tech-support scams almost always end with a remote-control app left on the PC, and older remote setups tend to stay on long after the one job they were for: Remote Desktop opened for a weekend, an SSH server you tried once, a TeamViewer install from years ago. This script lists every way in so you can decide what to keep. It also looks for less obvious ways this PC could be used as a relay.
+
+It checks Windows' own remote features first: Remote Desktop (on or off, Network Level Authentication, port, whether the firewall allows it on Public networks, and who is in Remote Desktop Users), Remote Assistance, Quick Assist (and whether it's running right now), OpenSSH Server with a count of authorized keys (never the keys themselves), WinRM / PowerShell Remoting, the Remote Registry service and `LocalAccountTokenFilterPolicy`. It then looks for about 25 remote-control, remote-support and RMM apps (TeamViewer, AnyDesk, RustDesk, ScreenConnect, Splashtop, LogMeIn/GoTo, Chrome Remote Desktop, Parsec, VNC servers, Atera, NinjaOne and others) in installed programs, services, running processes and startup entries. For each one it shows the version, install date, whether it starts with Windows (unattended access), whether it's running and which ports it listens on. Anything installed in the last 30 days is flagged as a possible scam.
+
+A second section, "Proxy / tunnel / hidden relay", looks for unsigned or user-folder programs that are listening (TCP and UDP) or holding established outbound connections, WinINET and WinHTTP proxy settings, `netsh` portproxy relay rules, saved VPN connections, and TAP / Wintun / WireGuard-style adapters that do not match a known installed VPN. It also searches for known tunnel and bandwidth-sharing tools (ngrok, Cloudflare Tunnel / cloudflared, frp, Chisel, Tor, reverse SSH or plink tasks, Honeygain, IPRoyal Pawns, PacketStream, Peer2Profit, EarnApp, Bright Data, Repocket, Traffmonetizer, Grass) as files, processes, services or scheduled tasks, and inbound firewall allow rules whose program sits in a user-writable folder, plus recently added any-program rules. The report ends with a numbered list of fixes and a reminder that a script cannot promise to catch malware that hides from Windows, with the `Start-MpWDOScan` command printed (never run) for a Microsoft Defender Offline scan.
+
+```powershell
+# Show all remote access on this PC
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-RemoteAccess.ps1"
+
+# Flag apps installed in the last week, and show firewall rules, service paths, how each app was found, and remote addresses
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-RemoteAccess.ps1" -RecentDays 7 -Detailed
+
+# Skip the listening-port and outbound-connection scan; still check proxies, tunnel tools and firewall rules
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-RemoteAccess.ps1" -SkipNetwork
+
+# Save the results to a CSV
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-RemoteAccess.ps1" -CsvPath "$env:USERPROFILE\Desktop\remote-access.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-RecentDays <1-365>` | Flag remote apps installed within this many days (default 30); also the window for recently added firewall rules |
+| `-Detailed` | Also print matching firewall rules, service paths, what each app was found by, and remote addresses for flagged connections |
+| `-SkipNetwork` | Skip the scan of listening ports and established outbound connections from unsigned or user-folder programs |
+| `-CsvPath <file>` | Export every built-in feature, app, proxy, adapter and tool found to a CSV |
+
+Changes nothing: it never turns features off or uninstalls anything, and fixes are printed as suggestions. Makes no network calls. Works without admin; as admin it can also count keys in the OpenSSH `administrators_authorized_keys` file and see paths of some system processes. Apps are matched by name, so a hit means "look at this", not proof of a problem. `Start-MpWDOScan` is only printed; this script never starts that scan.
 
 ---
 
