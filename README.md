@@ -33,6 +33,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-WifiProfiles.ps1](04_Security/Get-WifiProfiles.ps1) | 04 Security | Lists every Wi-Fi network this PC remembers with its security (Open, WEP, WPA, WPA2, WPA3), whether it joins automatically, hidden networks, Public/Private category and when it was last used, then flags risky ones (open or WEP networks that auto-join, old WPA/TKIP, open networks marked Private, stale profiles); never reads passwords | Read-only; -Remove / -RemoveStale delete profiles after typing YES | No (removing an all-users profile may need it) |
 | [Get-UpdateHealth.ps1](04_Security/Get-UpdateHealth.ps1) | 04 Security | Checks whether Windows Update is actually working: last successful check and install, the newest cumulative and Defender updates, pending restarts and why, the update services, paused updates and leftover policies (WSUS, deferrals, version pins, updates turned off), free space and cache size, and updates that keep failing with what their error codes mean, plus plain-English fixes; optionally lists updates not yet installed | Read-only; no network calls unless `-CheckOnline` | No |
 | [Find-RemoteAccess.ps1](04_Security/Find-RemoteAccess.ps1) | 04 Security | Shows every way someone could remotely see or control this PC: Remote Desktop (with NLA, firewall and allowed users), Remote Assistance, Quick Assist, OpenSSH Server and its authorized keys, WinRM, Remote Registry, plus remote-control, support and RMM apps such as TeamViewer, AnyDesk, ScreenConnect, RustDesk and VNC, with install date, whether they start with Windows and which ports they listen on; flags recently installed ones as a possible tech-support scam; also checks for unsigned or user-folder programs listening or holding outbound connections, proxy and VPN settings, portproxy relays, unexpected tunnel adapters, known tunnel and bandwidth-sharing tools (ngrok, cloudflared, frp, Chisel, Tor, reverse SSH, Honeygain and similar), and inbound firewall rules for programs in user folders | Read-only | Optional |
+| [Get-SignInHistory.ps1](04_Security/Get-SignInHistory.ps1) | 04 Security | Shows who signed in to this PC over the last two weeks and how (at the keyboard, unlock, Remote Desktop, cached, RunAs) with where remote sign-ins came from, failed password attempts grouped by account, source and reason, lockouts, accounts created, deleted, enabled or renamed, members added to Administrators, and a cleared Security log; also lists local accounts with admin rights and last sign-in, how far back the log goes and whether failed sign-ins are being recorded | Read-only | Optional (needed for failed sign-ins and account changes) |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
 | [Export-PCSnapshot.ps1](05_Backup/Export-PCSnapshot.ps1) | 05 Backup | Saves a dated "how this PC is set up" snapshot for rebuilding after a reset or on a new PC: a `winget import` file, every installed desktop and Store app, PowerShell modules, printers, mapped drives, user PATH, fonts you added, Windows features and a system summary, plus restore steps; can copy browser bookmarks, zip it, and show apps added, removed or updated since an older snapshot | Changes nothing; writes only the snapshot folder; never saves passwords, keys or variable values | Optional |
@@ -712,6 +713,38 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Find-RemoteAccess.ps1" -
 | `-CsvPath <file>` | Export every built-in feature, app, proxy, adapter and tool found to a CSV |
 
 Changes nothing: it never turns features off or uninstalls anything, and fixes are printed as suggestions. Makes no network calls. Works without admin; as admin it can also count keys in the OpenSSH `administrators_authorized_keys` file and see paths of some system processes. Apps are matched by name, so a hit means "look at this", not proof of a problem. `Start-MpWDOScan` is only printed; this script never starts that scan.
+
+### Get-SignInHistory.ps1
+
+"Has anyone been on my PC?" is hard to answer from Event Viewer. This script reads the sign-in records Windows already keeps and turns them into a short report.
+
+It starts with your local accounts: enabled or disabled, administrator or not, last sign-in and password age, and flags an enabled Guest or built-in Administrator, accounts that may not need a password, and accounts nobody has used in months. It then summarizes successful sign-ins over the last 14 days by account and type (at the keyboard, unlock, Remote Desktop, cached/offline, RunAs), points out sign-ins between 1 AM and 5 AM, and lists Remote Desktop sign-ins with the source address and whether it is this PC, your LAN or the internet. Failed sign-ins are grouped by account, type, source and reason in plain English (wrong password, no such user, account disabled, locked out). Account changes cover accounts created, deleted, enabled, disabled or renamed, password resets, lockouts, group membership changes (especially Administrators) and the Security log being cleared. Last, it shows how far back the Security log reaches and whether failed sign-ins are being recorded at all, then ends with a numbered list of what to look at first.
+
+Without admin, Windows hides the Security log, so you get local accounts, basic sign-ins from the System log and Remote Desktop sessions only. Run it as admin for the full report.
+
+```powershell
+# Sign-in report for the last 14 days (run as admin for failed attempts and account changes)
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-SignInHistory.ps1"
+
+# Look back 60 days and show the most recent individual sign-ins
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-SignInHistory.ps1" -Days 60 -Detailed
+
+# Include network sign-ins (file shares, printers) in the counts
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-SignInHistory.ps1" -IncludeNetwork
+
+# Save every sign-in, failed attempt and account change to a CSV
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-SignInHistory.ps1" -CsvPath "$env:USERPROFILE\Desktop\sign-ins.csv"
+```
+
+| Switch | What it does |
+|---|---|
+| `-Days <1-365>` | How many days back to look (default 14); the Security log is often only a few weeks deep |
+| `-Top <n>` | Rows to show in each list (default 15) |
+| `-IncludeNetwork` | Also count successful network sign-ins (type 3), which are noisy on most PCs; failed network sign-ins are always shown |
+| `-Detailed` | Also show each account's password age and the most recent individual sign-ins |
+| `-CsvPath <file>` | Export every sign-in, failed attempt and account change in the window to a CSV |
+
+Changes nothing: it never turns auditing on, disables accounts or edits groups, and fixes are printed as suggestions. Makes no network calls, including no reverse DNS lookups of the addresses it shows. Works without admin in a limited mode. Addresses are labeled This PC, LAN or Internet from the address alone, so an "Internet" label means "look at this", not proof of a break-in.
 
 ---
 
