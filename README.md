@@ -34,6 +34,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-UpdateHealth.ps1](04_Security/Get-UpdateHealth.ps1) | 04 Security | Checks whether Windows Update is actually working: last successful check and install, the newest cumulative and Defender updates, pending restarts and why, the update services, paused updates and leftover policies (WSUS, deferrals, version pins, updates turned off), free space and cache size, and updates that keep failing with what their error codes mean, plus plain-English fixes; optionally lists updates not yet installed | Read-only; no network calls unless `-CheckOnline` | No |
 | [Find-RemoteAccess.ps1](04_Security/Find-RemoteAccess.ps1) | 04 Security | Shows every way someone could remotely see or control this PC: Remote Desktop (with NLA, firewall and allowed users), Remote Assistance, Quick Assist, OpenSSH Server and its authorized keys, WinRM, Remote Registry, plus remote-control, support and RMM apps such as TeamViewer, AnyDesk, ScreenConnect, RustDesk and VNC, with install date, whether they start with Windows and which ports they listen on; flags recently installed ones as a possible tech-support scam; also checks for unsigned or user-folder programs listening or holding outbound connections, proxy and VPN settings, portproxy relays, unexpected tunnel adapters, known tunnel and bandwidth-sharing tools (ngrok, cloudflared, frp, Chisel, Tor, reverse SSH, Honeygain and similar), and inbound firewall rules for programs in user folders | Read-only | Optional |
 | [Get-SignInHistory.ps1](04_Security/Get-SignInHistory.ps1) | 04 Security | Shows who signed in to this PC over the last two weeks and how (at the keyboard, unlock, Remote Desktop, cached, RunAs) with where remote sign-ins came from, failed password attempts grouped by account, source and reason, lockouts, accounts created, deleted, enabled or renamed, members added to Administrators, and a cleared Security log; also lists local accounts with admin rights and last sign-in, how far back the log goes and whether failed sign-ins are being recorded | Read-only | Optional (needed for failed sign-ins and account changes) |
+| [Get-DefenderReport.ps1](04_Security/Get-DefenderReport.ps1) | 04 Security | Deep-dive into Microsoft Defender Antivirus: running mode (normal or passive behind another antivirus), real-time, behavior, download and script scanning, cloud protection, sample submission, PUA blocking, network and tamper protection, engine/platform/signature versions with signature and scan age; lists exclusions and flags risky ones (whole drives, Temp/Downloads/AppData, .exe/.ps1 extensions, powershell.exe); recent detections with what Defender did and whether it worked, allowed threats and failed removals; Defender log warnings (protection turned off, exclusion changes, tamper attempts, failed updates and scans, ASR/Controlled Folder Access/network protection blocks); and Attack Surface Reduction rules by name | Read-only | Optional (needed to see exclusions) |
 | [Backup-Folders.ps1](05_Backup/Backup-Folders.ps1) | 05 Backup | Backs up Desktop, Documents, Pictures and other folders to a USB drive or NAS with robocopy, copying only new and changed files | Preview by default; never deletes unless `-Mirror` and you type YES | No |
 | [Test-BackupHealth.ps1](05_Backup/Test-BackupHealth.ps1) | 05 Backup | Checks System Restore, File History, OneDrive folder backup, system images, the recovery environment, BitLocker recovery keys and your own backup drive or NAS, then shows what isn't backed up and how to fix it | Read-only | Optional |
 | [Export-PCSnapshot.ps1](05_Backup/Export-PCSnapshot.ps1) | 05 Backup | Saves a dated "how this PC is set up" snapshot for rebuilding after a reset or on a new PC: a `winget import` file, every installed desktop and Store app, PowerShell modules, printers, mapped drives, user PATH, fonts you added, Windows features and a system summary, plus restore steps; can copy browser bookmarks, zip it, and show apps added, removed or updated since an older snapshot | Changes nothing; writes only the snapshot folder; never saves passwords, keys or variable values | Optional |
@@ -745,6 +746,37 @@ powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-SignInHistory.ps1" -
 | `-CsvPath <file>` | Export every sign-in, failed attempt and account change in the window to a CSV |
 
 Changes nothing: it never turns auditing on, disables accounts or edits groups, and fixes are printed as suggestions. Makes no network calls, including no reverse DNS lookups of the addresses it shows. Works without admin in a limited mode. Addresses are labeled This PC, LAN or Internet from the address alone, so an "Internet" label means "look at this", not proof of a break-in.
+
+### Get-DefenderReport.ps1
+
+Windows Security shows a green tick when Defender is "on", but the tick hides a lot: an exclusion for your whole Downloads folder, a threat that was allowed instead of removed, signature updates that have been failing for a week, or something quietly switching real-time protection off. This script reads what Defender already knows about itself and turns it into one report. (Test-SecurityPosture.ps1 does the quick on/off check; this goes deeper.)
+
+It starts with status: whether Defender is your active antivirus or in passive mode because another one is in charge (and which one Windows Security Center reports), real-time protection, behavior monitoring, scanning of downloads and scripts, cloud protection and automatic sample submission, potentially unwanted app blocking, network protection, tamper protection, engine, platform and signature versions, and how old the signatures (flagged after 3 days) and last quick and full scans are. Exclusions are listed by folder, extension, process and IP address, with risky ones flagged: whole drives, user-writable folders such as Temp, Downloads, AppData and Public, program and script extensions like .exe, .ps1, .js, .vbs and .bat, and broad processes like powershell.exe or cmd.exe. Detections over the last 30 days show the threat, severity, category, file, what Defender did (quarantined, removed, allowed, failed) and whether it worked, with repeats grouped, plus any threats on the allowed list. From the Defender event log it picks out real-time protection being turned off, settings changes (exclusion changes shown one by one), tamper protection blocking a change, failed scans, failed signature, engine and platform updates, engine errors, and blocks or audits by Attack Surface Reduction rules, Controlled Folder Access and network protection. Last, it lists Attack Surface Reduction rules by friendly name with Block, Audit, Warn or Off, Controlled Folder Access state and allowed apps, then ends with a numbered list of what to fix first.
+
+Windows hides exclusions from non-admins ("N/A: Must be an administrator to view exclusions"), and on some PCs the detection history and Defender event log too. Run it as admin for the full report.
+
+```powershell
+# Defender report for the last 30 days (run as admin to see exclusions)
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-DefenderReport.ps1"
+
+# Look back 90 days and show every detection and event
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-DefenderReport.ps1" -Days 90 -Detailed
+
+# Save detections, events and exclusions to a CSV
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-DefenderReport.ps1" -CsvPath "$env:USERPROFILE\Desktop\defender.csv"
+
+# Save the whole report as an HTML page
+powershell -ExecutionPolicy Bypass -File ".\04_Security\Get-DefenderReport.ps1" -HtmlPath "$env:USERPROFILE\Desktop\defender.html"
+```
+
+| Switch | What it does |
+|---|---|
+| `-Days <1-365>` | How many days back to look for detections and events (default 30) |
+| `-Detailed` | Show every detection and event instead of the grouped summary, plus each ASR rule GUID and Controlled Folder Access allowed app |
+| `-CsvPath <file>` | Export detections, events and exclusions to a CSV with a Type column (Detection, Event, Exclusion) |
+| `-HtmlPath <file>` | Also save status, findings, detections, events and exclusions as a simple HTML page |
+
+Changes nothing: it never updates signatures, starts a scan, removes an exclusion or turns a setting on, and fixes are printed as suggestions (a Windows Security click path or a PowerShell command to run yourself). Makes no network calls. Works without admin, but exclusions are hidden until you run it as admin. If Defender is missing, not running or in passive mode, it says so and shows what it can.
 
 ---
 
