@@ -20,6 +20,7 @@ Made for power users, IT folks, small-business PCs and anyone who hates doing th
 | [Get-DiskHealth.ps1](02_Performance/Get-DiskHealth.ps1) | 02 Performance | Reports physical disk model, media, health/operational status (incl. predictive failure), volume free space, drive age (power-on hours or PnP first-seen), firmware + storage driver date/version, and SMART-style reliability counters (temp, wear, read/write and uncorrected errors) when available, plus plain-English findings | Read-only | Optional |
 | [Get-CrashHistory.ps1](02_Performance/Get-CrashHistory.ps1) | 02 Performance | Shows what's been crashing over the last 30 days: blue screens with their stop codes, unexpected shutdowns (crash vs. power loss), app crashes and hangs grouped by app and crashing module, WHEA hardware errors and disk errors, plus the Reliability Monitor score and plain-English findings | Read-only | Optional |
 | [Get-DriverReport.ps1](02_Performance/Get-DriverReport.ps1) | 02 Performance | Lists devices with Device Manager errors and what each code means, the version and date of your key drivers (graphics, network, audio, storage, Bluetooth, chipset), third-party drivers that are years old or unsigned, leftover driver packages a newer one has replaced, and whether Windows Update may deliver drivers, plus plain-English findings | Read-only | No |
+| [Find-Bloatware.ps1](02_Performance/Find-Bloatware.ps1) | 02 Performance | Finds preinstalled, promoted and trial apps (Store games and promos, Microsoft extras, Xbox apps, OEM utilities, trial antivirus and OEM desktop bundles) and sorts each into Safe to remove, Optional or Check first, with size and whether it's running right now; also lists apps provisioned for every new account and the Windows settings that silently install suggested apps or show ads in Start, the lock screen and Widgets | Read-only; `-Remove` asks you to type YES, then asks about each Store app and removes only the ones you pick, for your account only | No (Optional to see apps provisioned for new accounts) |
 | [Block-Distractions.ps1](03_Utilities/Block-Distractions.ps1) | 03 Utilities | Blocks distracting and risky sites via the hosts file | Dry run by default, with backup and undo | To apply |
 | [Set-FocusMode.ps1](03_Utilities/Set-FocusMode.ps1) | 03 Utilities | Toggles a social-media block in the hosts file (Facebook, Instagram, Threads, X, TikTok, Snapchat, Reddit, Pinterest, Tumblr, Twitch; optional YouTube, LinkedIn, Discord) so you can focus | Edits hosts in a marked block; backs up first; run again or -Off to undo | To change (not for -Status) |
 | [Test-HomeNetwork.ps1](03_Utilities/Test-HomeNetwork.ps1) | 03 Utilities | Checks adapters, Wi-Fi signal, gateway and internet latency, packet loss, DNS speed and proxy settings, then lists problems in plain English | Read-only | No |
@@ -368,6 +369,32 @@ powershell -ExecutionPolicy Bypass -File ".\02_Performance\Get-DriverReport.ps1"
 | `-CsvPath <file>` | Export every driver in use with its old and unsigned flags to CSV |
 
 Works without admin and needs no extra modules. **Changes nothing** and makes no network calls. An unused driver package can still be needed for something you only plug in now and then, like a printer or a dock, so remove only the ones listed as replaced.
+
+### Find-Bloatware.ps1
+
+A new Windows 11 PC, or one that just took a feature update, comes with apps most people never open: Candy Crush and Solitaire pinned to Start, TikTok and Disney+ promos, News, Weather and Tips, a McAfee or Norton trial, and the PC maker's own utilities. Some sit in the background using memory, and Windows keeps quietly adding more. This script lists what's there and tells you what's safe to remove.
+
+Each app is sorted into **Safe to remove** (games, promos and ad-supported apps), **Optional** (Microsoft extras that are fine to remove if you don't use them, such as News, Weather, Tips, Clipchamp, Maps, Feedback Hub and personal Teams) or **Check first** (things some people rely on: Xbox apps needed for Game Pass and some PC games, Phone Link, Dolby Access, OEM utilities like HP Support Assistant, Dell SupportAssist and Lenovo Vantage that deliver driver and BIOS updates, and trial antivirus that may be your only antivirus). For Store apps it shows the size of the install folder and whether the app is running right now. Desktop trialware and OEM bundles from Programs and Features are listed with their size. Run as admin to also see apps provisioned for every new account, which come back for each new user even after you remove your own copy. Last, it checks the settings that let Windows install suggested apps without asking, show suggestions in Start, tips notifications, the "welcome experience" after updates, lock screen fun facts and Widgets, then ends with a numbered list of what to do first.
+
+```powershell
+# Report only (nothing is changed)
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Find-Bloatware.ps1"
+
+# Show every removable Store app, not just known bloatware, and save a CSV
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Find-Bloatware.ps1" -All -CsvPath "$env:USERPROFILE\Desktop\apps.csv"
+
+# Pick which Store apps to remove, one by one
+powershell -ExecutionPolicy Bypass -File ".\02_Performance\Find-Bloatware.ps1" -Remove
+```
+
+| Switch | What it does |
+|---|---|
+| `-All` | List every removable Store app for your account, not just known bloatware (framework, resource and system packages are always skipped) |
+| `-NoSize` | Skip measuring each app's install folder (faster) |
+| `-Remove` | After you type YES, asks about each matched Store app (y/N) and removes the ones you pick for your account only; they can be reinstalled from the Microsoft Store |
+| `-CsvPath <file>` | Export every app and setting found, with level, size, note and the command or click path to remove or turn it off |
+
+Read-only unless you pass `-Remove`. Even then it only removes Store apps for your own account, the same as right-click > Uninstall in Start. It never removes provisioned packages, desktop programs or system packages, and never changes a setting; for those it prints the command or Settings click path for you to use yourself. Makes no network calls. A mock test (`Test-Find-Bloatware.ps1`) checks the report and the removal prompts without touching real apps.
 
 ---
 
